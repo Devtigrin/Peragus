@@ -23,7 +23,7 @@ export function Security() {
       <SecurityAlert
         type="critical"
         title="Sempre confira o domínio oficial"
-        description="Antes de conectar sua carteira, verifique se você está no domínio oficial peragus.com. Golpistas podem tentar imitar nosso site."
+        description="Antes de conectar sua carteira, verifique se você está no domínio oficial peragus.com.br. Golpistas podem tentar imitar nosso site."
       />
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -106,7 +106,7 @@ export function Security() {
                 <ul className="space-y-2 text-sm text-text-secondary">
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-400 font-bold">•</span>
-                    Sempre verifique o domínio: <strong className="text-text-primary">peragus.com</strong>
+                    Sempre verifique o domínio: <strong className="text-text-primary">peragus.com.br</strong>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-yellow-400 font-bold">•</span>

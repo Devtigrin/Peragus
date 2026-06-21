@@ -37,7 +37,7 @@ export function Footer() {
           <div>
             <h3 className="mb-3 text-sm font-semibold text-text-primary">Contato</h3>
             <ul className="space-y-2">
-              <li><a href="mailto:contact@peragus.com" className="text-sm text-text-tertiary hover:text-text-secondary follow-through-fast">contact@peragus.com</a></li>
+              <li><a href="mailto:contato@peragus.com.br" className="text-sm text-text-tertiary hover:text-text-secondary follow-through-fast">contato@peragus.com.br</a></li>
             </ul>
           </div>
         </div>

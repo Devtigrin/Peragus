@@ -9,63 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '@/store/useAuth'
 import { DEMO_NOTICE } from '@/constants/demo'
 import { PeragusLogo } from '@/components/brand/PeragusLogo'
-
-const TERMS_TEXT = `
-TERMOS DE USO - PERAGUS
-
-Última atualização: Junho de 2026
-
-1. ACEITAÇÃO DOS TERMOS
-
-Ao criar uma conta na Peragus, você declara ter lido, compreendido e aceitado estes Termos de Uso.
-
-2. DEFINIÇÕES
-
-"Peragus" é uma infraestrutura de pagamentos cross-border que conecta moedas fiduciárias locais através de liquidação baseada em stablecoins.
-
-"Carteira autocustodial" significa que o usuário mantém controle sobre sua carteira, chaves privadas e ativos digitais. A Peragus não guarda seed phrases nem chaves privadas.
-
-3. SERVIÇO
-
-A Peragus permite comprar USDT mediante pagamento em moeda local. Os USDT são enviados diretamente para a carteira conectada ou informada pelo usuário.
-
-4. OBRIGAÇÕES DO USUÁRIO
-
-4.1. Fornecer informações verdadeiras e atualizadas;
-4.2. Manter a segurança de sua conta e senha;
-4.3. Não utilizar a plataforma para atividades ilícitas;
-4.4. Verificar o endereço da carteira de destino antes de confirmar a operação;
-4.5. Declarar a origem lícita dos recursos utilizados.
-
-5. COMPLIANCE
-
-A Peragus pode realizar monitoramento de operações e verificação de identidade conforme políticas de prevenção à lavagem de dinheiro (PLD/FT). Operações suspeitas podem ser retidas para análise.
-
-6. TAXAS
-
-As taxas de serviço e redes blockchain são informadas previamente antes da confirmação da operação. O usuário declara ciência e aceitação das taxas ao confirmar.
-
-7. LIMITAÇÃO DE RESPONSABILIDADE
-
-7.1. A Peragus não se responsabiliza por erros do usuário ao informar endereço de carteira;
-7.2. Transações on-chain, uma vez confirmadas, não podem ser revertidas;
-7.3. A Peragus não é responsável por atrasos ou falhas em redes blockchain de terceiros.
-
-8. PRIVACIDADE
-
-Os dados pessoais fornecidos são tratados conforme nossa Política de Privacidade, em conformidade com a Lei Geral de Proteção de Dados (LGPD).
-
-9. DISPOSIÇÕES GERAIS
-
-9.1. Estes termos podem ser alterados a qualquer momento, mediante comunicação prévia;
-9.2. O usuário será notificado sobre mudanças significativas;
-9.3. O descumprimento destes termos pode resultar no bloqueio da conta.
-
-10. CONTATO
-
-Para questões legais ou de compliance: compliance@peragus.com
-Para suporte: support@peragus.com
-`
+import { TERMS_TEXT } from '@/constants/legalTerms'
 
 export function Register() {
   const [email, setEmail] = useState('')
