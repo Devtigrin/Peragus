@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Wallet, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/store/useAuth'
 import { PeragusLogo } from '@/components/brand/PeragusLogo'
+import { WalletConnectButton } from '@/components/features/WalletConnectButton'
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -35,12 +36,7 @@ export function Header() {
             </a>
             {isAuthenticated ? (
               <div className="flex items-center gap-4">
-                <Link to="/new-liquidation">
-                  <Button size="sm">
-                    <Wallet className="h-4 w-4" />
-                    Conectar carteira
-                  </Button>
-                </Link>
+                <WalletConnectButton />
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm">
                     Dashboard
@@ -55,12 +51,7 @@ export function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <Link to="/new-liquidation">
-                  <Button size="sm">
-                    <Wallet className="h-4 w-4" />
-                    Conectar carteira
-                  </Button>
-                </Link>
+                <WalletConnectButton />
                 <Link to="/login">
                   <Button variant="ghost" size="sm">
                     Entrar
@@ -101,12 +92,7 @@ export function Header() {
             <div className="pt-4 space-y-2">
               {isAuthenticated ? (
                 <>
-                  <Link to="/new-liquidation" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full">
-                      <Wallet className="h-4 w-4" />
-                      Conectar carteira
-                    </Button>
-                  </Link>
+                  <WalletConnectButton className="w-full" size="default" />
                   <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
                     <Button variant="outline" className="w-full">Dashboard</Button>
                   </Link>
@@ -116,12 +102,7 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/new-liquidation" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full">
-                      <Wallet className="h-4 w-4" />
-                      Conectar carteira
-                    </Button>
-                  </Link>
+                  <WalletConnectButton className="w-full" size="default" />
                   <Link to="/login" onClick={() => setMobileOpen(false)}>
                     <Button variant="outline" className="w-full">Entrar</Button>
                   </Link>

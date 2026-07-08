@@ -1,6 +1,6 @@
 export type WalletType = 'metamask' | 'trust' | 'rabby' | 'coinbase' | 'walletconnect' | 'manual'
 
-export type NetworkType = 'ethereum' | 'polygon' | 'arbitrum' | 'optimism'
+export type NetworkType = 'ethereum' | 'polygon' | 'bnb'
 
 export type OperationStatus = 'pending_payment' | 'payment_confirmed' | 'processing' | 'sent' | 'completed' | 'failed' | 'analysis'
 

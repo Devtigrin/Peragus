@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Bell, LogOut, User, X, Circle, Menu, Wallet } from 'lucide-react'
+import { Bell, LogOut, User, X, Circle, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/store/useAuth'
 import { dashboardLinks } from '@/constants/navigation'
 import { cn } from '@/lib/utils'
+import { WalletConnectButton } from '@/components/features/WalletConnectButton'
 
 interface Notification {
   id: string
@@ -98,12 +99,7 @@ export function DashboardTopBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/new-liquidation" className="hidden md:block">
-            <Button size="sm">
-              <Wallet className="h-4 w-4" />
-              Conectar carteira
-            </Button>
-          </Link>
+          <WalletConnectButton className="hidden md:inline-flex" />
           <div className="relative" ref={dropdownRef}>
             <Button
               variant="ghost"
@@ -225,13 +221,7 @@ export function DashboardTopBar() {
             >
               Voltar ao site
             </Link>
-            <Link
-              to="/new-liquidation"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-hover hover:text-text-primary"
-            >
-              Conectar carteira
-            </Link>
+            <WalletConnectButton className="w-full" size="default" variant="outline" />
           </nav>
         </div>
       )}

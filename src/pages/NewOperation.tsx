@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+﻿import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, DollarSign, ExternalLink, FileText, QrCode, Send, ShieldAlert, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,8 @@ import { useVerification } from '@/store/useVerification'
 import { NETWORKS, USDT_ASK } from '@/constants'
 import { DEMO_NOTICE } from '@/constants/demo'
 import { formatCurrency, generateId } from '@/lib/utils'
+import { operationNetworkChainIds } from '@/lib/web3'
+import { useWallet } from '@/hooks/useWallet'
 import type { NetworkType, Operation } from '@/types'
 
 const steps = [
@@ -66,6 +68,7 @@ export function NewOperation() {
   const [searchParams] = useSearchParams()
   const { addOperation, updateOperation, updateOperationStatus } = useOperations()
   const { status: verificationStatus } = useVerification()
+  const { address, connected, provider, chainId: walletChainId, error: walletError, switchNetwork } = useWallet()
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [walletAddress, setWalletAddress] = useState('')
@@ -88,6 +91,26 @@ export function NewOperation() {
   const totalToPay = brlAmount + totalFee
   const walletAddressValid = isEvmAddress(walletAddress)
   const explorerUrl = transactionHash && networkInfo ? `${networkInfo.explorerUrl}${transactionHash}` : null
+
+  const handleNetworkChange = async (value: string) => {
+    const nextNetwork = value as NetworkType
+    const prevNetwork = network
+
+    if (connected && provider) {
+      const targetChainId = operationNetworkChainIds[nextNetwork]
+      if (targetChainId && walletChainId !== targetChainId) {
+        setNetwork(nextNetwork)
+        const success = await switchNetwork(targetChainId)
+        if (!success) {
+          setNetwork(prevNetwork)
+          return
+        }
+        return
+      }
+    }
+
+    setNetwork(nextNetwork)
+  }
 
   const handleNextStep = () => {
     if (currentStep < 4) setCurrentStep((s) => s + 1)
@@ -169,10 +192,12 @@ export function NewOperation() {
     setPixGenerated(false)
   }
 
+  const isNetworkMismatch = connected && !!address && !!walletChainId && walletChainId !== operationNetworkChainIds[network]
+
   const isStepValid = () => {
     switch (currentStep) {
-      case 0: return walletAddressValid
-      case 1: return parseFloat(usdtAmount) > 0 && !!network
+      case 0: return walletAddressValid || (connected && !!address)
+      case 1: return parseFloat(usdtAmount) > 0 && !!network && !isNetworkMismatch
       case 2: return true
       case 3: return pixGenerated
       default: return true
@@ -248,7 +273,7 @@ export function NewOperation() {
                   Selecione sua carteira autocustodial ou informe o endereço que receberá os USDT.
                 </p>
               </div>
-              <WalletConnectBox onConnect={setWalletAddress} selectedAddress={walletAddress} />
+              <WalletConnectBox onConnect={setWalletAddress} selectedAddress={walletAddress} currentNetwork={network} />
               {walletAddress && !walletAddressValid && (
                 <p className="text-sm text-red-400">
                   Informe um endereço EVM válido para a rede selecionada, no formato 0x com 40 caracteres hexadecimais.
@@ -279,7 +304,7 @@ export function NewOperation() {
 
               <div className="space-y-2">
                 <Label>Rede de destino</Label>
-                <Select value={network} onValueChange={(v) => setNetwork(v as NetworkType)}>
+                <Select value={network} onValueChange={handleNetworkChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -295,6 +320,18 @@ export function NewOperation() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {walletError && (
+                <div className="rounded-lg border border-red-200/30 bg-red-50/30 p-3 text-sm text-red-400">
+                  {walletError}
+                </div>
+              )}
+
+              {isNetworkMismatch && !walletError && (
+                <div className="rounded-lg border border-yellow-200/30 bg-yellow-50/30 p-3 text-sm text-yellow-500">
+                  A rede da sua carteira não corresponde à rede selecionada. Use o seletor acima para trocar de rede e autorize a troca na sua carteira para continuar.
+                </div>
+              )}
 
               {networkInfo && (
                 <div className="rounded-lg bg-surface-elevated border border-border p-4 space-y-2">

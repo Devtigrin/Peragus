@@ -20,22 +20,13 @@ export const NETWORKS: NetworkInfo[] = [
     explorerUrl: 'https://polygonscan.com/tx/',
   },
   {
-    id: 'arbitrum',
-    name: 'Arbitrum',
-    shortName: 'ARB',
-    icon: 'ARB',
-    fee: 0.15,
-    confirmationTime: '~3 min',
-    explorerUrl: 'https://arbiscan.io/tx/',
-  },
-  {
-    id: 'optimism',
-    name: 'Optimism',
-    shortName: 'OP',
-    icon: 'OP',
-    fee: 0.12,
+    id: 'bnb',
+    name: 'BNB Chain',
+    shortName: 'BEP-20',
+    icon: 'BNB',
+    fee: 0.08,
     confirmationTime: '~2 min',
-    explorerUrl: 'https://optimistic.etherscan.io/tx/',
+    explorerUrl: 'https://bscscan.com/tx/',
   },
 ]
 
@@ -62,4 +53,4 @@ export const STATUS_COLORS: Record<OperationStatus, string> = {
 export const USDT_BID = 5.87
 export const USDT_ASK = 5.92
 export const ESTIMATED_TIME = '5 a 15 minutos'
-export const SUPPORTED_NETWORK = 'Ethereum, Polygon, Arbitrum, Optimism'
+export const SUPPORTED_NETWORK = 'Ethereum (ERC-20), Polygon (MATIC), BNB Chain (BEP-20)'

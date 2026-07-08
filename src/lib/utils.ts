@@ -17,6 +17,10 @@ export function formatAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+export function isEVMAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address.trim())
+}
+
 export function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString('pt-BR', {
     day: '2-digit',
