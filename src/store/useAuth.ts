@@ -1,18 +1,41 @@
 import { create } from 'zustand'
 import type { AuthState } from '@/types'
+import { supabase } from '@/lib/supabase'
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  login: (email: string, password: string) => {
-    void password
-    set({ user: { email }, isAuthenticated: true })
+  loading: true,
+
+  login: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error: error.message }
+    set({ user: { email: data.user?.email ?? email }, isAuthenticated: true })
+    return { error: null }
   },
-  register: (email: string, password: string, name: string) => {
-    void password
-    set({ user: { email, name }, isAuthenticated: true })
+
+  register: async (email: string, password: string, name: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: name } },
+    })
+    if (error) return { error: error.message }
+    set({ user: { email: data.user?.email ?? email, name }, isAuthenticated: true })
+    return { error: null }
   },
-  logout: () => {
+
+  logout: async () => {
+    await supabase.auth.signOut()
     set({ user: null, isAuthenticated: false })
   },
 }))
+
+// Mantém o usuário logado ao recarregar a página, e sincroniza com o Supabase
+supabase.auth.onAuthStateChange((_event, session) => {
+  useAuth.setState({
+    user: session?.user ? { email: session.user.email ?? '', name: session.user.user_metadata?.full_name } : null,
+    isAuthenticated: !!session,
+    loading: false,
+  })
+})

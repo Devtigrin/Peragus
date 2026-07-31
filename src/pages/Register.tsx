@@ -40,12 +40,22 @@ export function Register() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!termsAccepted || !acceptedPrivacy) return
-    register(email, password, name)
+const [error, setError] = useState<string | null>(null)
+const [loading, setLoading] = useState(false)
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!termsAccepted || !acceptedPrivacy) return
+  setError(null)
+  setLoading(true)
+  const { error } = await register(email, password, name)
+  setLoading(false)
+  if (error) {
+    setError(error)
+  } else {
     setJustRegistered(true)
   }
+}
 
   if (justRegistered) {
     return (
@@ -97,6 +107,9 @@ export function Register() {
             <CardDescription>Comece a usar a Peragus em menos de 2 minutos</CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <p className="mb-4 text-center text-sm text-red-500">{error}</p>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome completo</Label>
@@ -185,12 +198,12 @@ export function Register() {
                 Ao continuar, você declara que leu e concorda com os Termos de Uso e a Política de Privacidade da Peragus.
               </p>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!termsAccepted || !acceptedPrivacy}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={!termsAccepted || !acceptedPrivacy || loading}
               >
-                Criar conta
+                {loading ? 'Criando conta...' : 'Criar conta'}
               </Button>
             </form>
 
