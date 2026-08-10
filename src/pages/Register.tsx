@@ -47,12 +47,17 @@ export function Register() {
     if (!termsAccepted || !acceptedPrivacy) return
     setError(null)
     setLoading(true)
-    const { error } = await register(email, password, name)
-    setLoading(false)
-    if (error) {
-      setError(error)
-    } else {
-      setJustRegistered(true)
+    try {
+      const { error } = await register(email, password, name)
+      if (error) {
+        setError(error)
+      } else {
+        setJustRegistered(true)
+      }
+    } catch {
+      setError('Não foi possível criar a conta. Verifique sua conexão e tente novamente.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -204,6 +209,17 @@ export function Register() {
               >
                 {loading ? 'Criando conta...' : 'Criar conta'}
               </Button>
+
+              {!termsAccepted && (
+                <p className="text-xs text-yellow-500">
+                  Para liberar o botão: role os Termos de Uso até o final e toque em &quot;Li e aceito os Termos de Uso&quot;.
+                </p>
+              )}
+              {termsAccepted && !acceptedPrivacy && (
+                <p className="text-xs text-yellow-500">
+                  Para liberar o botão: marque a caixa da Política de Privacidade acima.
+                </p>
+              )}
             </form>
 
             <div className="relative my-6">
