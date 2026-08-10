@@ -52,9 +52,10 @@ export interface User {
 export interface AuthState {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => void
-  register: (email: string, password: string, name: string) => void
-  logout: () => void
+  loading: boolean
+  login: (email: string, password: string) => Promise<{ error: string | null }>
+  register: (email: string, password: string, name: string) => Promise<{ error: string | null }>
+  logout: () => Promise<void>
 }
 
 export type VerificationStatus = 'not_started' | 'in_progress' | 'under_review' | 'approved' | 'rejected'

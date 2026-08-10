@@ -12,13 +12,22 @@ import { PeragusLogo } from '@/components/brand/PeragusLogo'
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { login } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    login(email, password)
-    navigate('/dashboard')
+    setError(null)
+    setLoading(true)
+    const { error } = await login(email, password)
+    setLoading(false)
+    if (error) {
+      setError(error)
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (
@@ -34,6 +43,9 @@ export function Login() {
             <CardHeader className="text-center">
               <CardTitle>Entrar</CardTitle>
               <CardDescription>Acesse sua conta Peragus</CardDescription>
+              {error && (
+                <p className="mt-4 text-center text-sm text-red-500">{error}</p>
+              )}
             </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -59,8 +71,8 @@ export function Login() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Entrar
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
 

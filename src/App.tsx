@@ -19,13 +19,15 @@ import { Settings } from '@/pages/Settings'
 import { useAuth } from '@/store/useAuth'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return null
   if (!isAuthenticated) return <Navigate to="/login" replace />
   return <>{children}</>
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return null
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }

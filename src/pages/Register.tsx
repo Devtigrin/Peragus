@@ -20,6 +20,8 @@ export function Register() {
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [acceptanceDate, setAcceptanceDate] = useState<string | null>(null)
   const [justRegistered, setJustRegistered] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const termsRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const { register } = useAuth()
@@ -40,11 +42,18 @@ export function Register() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!termsAccepted || !acceptedPrivacy) return
-    register(email, password, name)
-    setJustRegistered(true)
+    setError(null)
+    setLoading(true)
+    const { error } = await register(email, password, name)
+    setLoading(false)
+    if (error) {
+      setError(error)
+    } else {
+      setJustRegistered(true)
+    }
   }
 
   if (justRegistered) {
@@ -97,6 +106,9 @@ export function Register() {
             <CardDescription>Comece a usar a Peragus em menos de 2 minutos</CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <p className="mb-4 text-center text-sm text-red-500">{error}</p>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome completo</Label>
@@ -188,9 +200,9 @@ export function Register() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!termsAccepted || !acceptedPrivacy}
+                disabled={!termsAccepted || !acceptedPrivacy || loading}
               >
-                Criar conta
+                {loading ? 'Criando conta...' : 'Criar conta'}
               </Button>
             </form>
 
