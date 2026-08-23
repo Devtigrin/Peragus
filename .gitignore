@@ -25,3 +25,18 @@ dist-ssr
 
 # Local isolated worktrees
 .worktrees/
+
+# Local Superpowers visual companion
+.superpowers/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+*.tsbuildinfo
+
+# Playwright
+test-results/
+playwright-report/
