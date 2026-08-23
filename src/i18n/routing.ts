@@ -26,6 +26,21 @@ export function sectionPath(locale: Locale, id: string): string {
   return `${homePath(locale)}#${id}`
 }
 
+export type AppSlug = 'chaves-api' | 'configuracoes'
+export type AuthSlug = 'login' | 'register' | 'recuperar-senha' | 'resetar-senha'
+
+export function authPath(locale: Locale, slug: AuthSlug): string {
+  return `${PREFIX[locale]}/${slug}`
+}
+
+export function appPath(locale: Locale, slug?: AppSlug): string {
+  return slug ? `${PREFIX[locale]}/app/${slug}` : `${PREFIX[locale]}/app`
+}
+
+export function docsPath(locale: Locale): string {
+  return `${PREFIX[locale]}/docs`
+}
+
 export function localeFromPathname(pathname: string): Locale {
   const segment = pathname.split('/').filter(Boolean)[0]
   return segment === 'es' || segment === 'en' ? segment : 'pt'
