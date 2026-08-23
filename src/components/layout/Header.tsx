@@ -1,120 +1,94 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import * as Dialog from '@radix-ui/react-dialog'
 import { Menu, X } from 'lucide-react'
+import type { Locale } from '@/i18n/routing'
+import { homePath, pagePath, sandboxPath, sectionPath } from '@/i18n/routing'
+import type { HomeContent } from '@/content/home'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/store/useAuth'
-import { PeragusLogo } from '@/components/brand/PeragusLogo'
-import { WalletConnectButton } from '@/components/features/WalletConnectButton'
+import { Container } from '@/components/ui/container'
+import { LocaleSwitcher } from './LocaleSwitcher'
 
-export function Header() {
+const navigation = [
+  { key: 'product', href: '#produto' },
+  { key: 'howItWorks', href: '#como-funciona' },
+  { key: 'infrastructure', href: '#infraestrutura' },
+  { key: 'security', href: 'security' },
+] as const
+
+type HeaderProps = {
+  locale: Locale
+  content: HomeContent
+}
+
+export function Header({ locale, content }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const { isAuthenticated, user, logout } = useAuth()
-  const location = useLocation()
-  const isLanding = location.pathname === '/'
-  const isPublicPage = ['/', '/terms', '/privacy', '/compliance', '/security-info'].includes(location.pathname)
-  const sectionHref = (id: string) => isLanding ? `#${id}` : `/#${id}`
 
-  if (!isPublicPage) return null
+  const navLinks = navigation.map((item) => ({
+    label: content.nav[item.key],
+    href: item.href === 'security' ? pagePath(locale, 'security') : sectionPath(locale, item.href),
+  }))
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-surface/80 backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <PeragusLogo />
+    <header className="sticky top-0 z-50 border-b border-line bg-midnight">
+      <Container className="flex h-16 items-center justify-between gap-4">
+        <Link to={homePath(locale)} className="flex min-h-11 items-center gap-2 text-lg font-semibold text-primary">
+          Peragus
+        </Link>
+
+        <nav aria-label={content.nav.product} className="hidden items-center gap-6 lg:flex">
+          {navLinks.map((link) => (
+            <Link key={link.href} to={link.href} className="flex min-h-11 items-center text-sm text-secondary hover:text-primary transition-colors">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-3 lg:flex">
+          <LocaleSwitcher locale={locale} />
+          <Link to={sandboxPath(locale, 'login')} className="flex min-h-11 items-center text-sm text-secondary hover:text-primary transition-colors">
+            {content.nav.signIn}
           </Link>
+          <Button asChild size="sm">
+            <Link to={sandboxPath(locale, 'register')}>{content.nav.sandbox}</Link>
+          </Button>
+        </div>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <a href={sectionHref('learn-more')} className="text-sm text-text-secondary hover:text-text-primary transition-colors follow-through-fast">
-              Saiba mais
-            </a>
-            <a href={sectionHref('benefits')} className="text-sm text-text-secondary hover:text-text-primary transition-colors follow-through-fast">
-              Benefícios
-            </a>
-            <a href={sectionHref('faq')} className="text-sm text-text-secondary hover:text-text-primary transition-colors follow-through-fast">
-              Dúvidas
-            </a>
-            {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <WalletConnectButton />
-                <Link to="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    Dashboard
-                  </Button>
+        <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
+          <Dialog.Trigger asChild>
+            <button className="inline-flex h-11 w-11 items-center justify-center lg:hidden" aria-label={content.nav.menuOpen}>
+              <Menu aria-hidden="true" />
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-40 bg-midnight/80" />
+            <Dialog.Content aria-describedby={undefined} className="fixed inset-x-4 top-4 z-50 rounded-xl border border-line bg-surface p-5 shadow-panel lg:hidden">
+              <Dialog.Title className="sr-only">{content.nav.product}</Dialog.Title>
+              <Dialog.Close aria-label={content.nav.menuClose} className="ml-auto flex h-11 w-11 items-center justify-center">
+                <X aria-hidden="true" />
+              </Dialog.Close>
+              <nav aria-label={content.nav.product} className="mt-6 grid gap-2">
+                {navLinks.map((link) => (
+                  <Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center text-secondary">
+                    {link.label}
+                  </Link>
+                ))}
+                <Link to={sandboxPath(locale, 'login')} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center text-secondary">
+                  {content.nav.signIn}
                 </Link>
-                <div className="flex items-center gap-2 text-sm text-text-tertiary">
-                  <span>{user?.email}</span>
-                  <Button variant="ghost" size="sm" onClick={logout}>
-                    Sair
-                  </Button>
+                <Button asChild className="mt-3">
+                  <Link to={sandboxPath(locale, 'register')} onClick={() => setMobileOpen(false)}>
+                    {content.nav.sandbox}
+                  </Link>
+                </Button>
+                <div className="mt-4 border-t border-line pt-4">
+                  <LocaleSwitcher locale={locale} />
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <WalletConnectButton />
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Entrar
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button size="sm">
-                    Criar conta
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </nav>
-
-          <button
-            className="md:hidden p-2 text-text-primary"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
-            aria-expanded={mobileOpen}
-          >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-surface-elevated animate-slide-down">
-          <div className="space-y-1 px-4 py-4">
-            <a href={sectionHref('learn-more')} className="block py-2 text-sm text-text-secondary" onClick={() => setMobileOpen(false)}>
-              Saiba mais
-            </a>
-            <a href={sectionHref('benefits')} className="block py-2 text-sm text-text-secondary" onClick={() => setMobileOpen(false)}>
-              Benefícios
-            </a>
-            <a href={sectionHref('faq')} className="block py-2 text-sm text-text-secondary" onClick={() => setMobileOpen(false)}>
-              Dúvidas
-            </a>
-            <div className="pt-4 space-y-2">
-              {isAuthenticated ? (
-                <>
-                  <WalletConnectButton className="w-full" size="default" />
-                  <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-                    <Button variant="outline" className="w-full">Dashboard</Button>
-                  </Link>
-                  <Button variant="ghost" className="w-full" onClick={() => { logout(); setMobileOpen(false); }}>
-                    Sair
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <WalletConnectButton className="w-full" size="default" />
-                  <Link to="/login" onClick={() => setMobileOpen(false)}>
-                    <Button variant="outline" className="w-full">Entrar</Button>
-                  </Link>
-                  <Link to="/register" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full">Criar conta</Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+              </nav>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </Container>
     </header>
   )
 }
