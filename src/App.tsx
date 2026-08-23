@@ -3,6 +3,7 @@ import { MarketingLayout } from '@/components/layout/MarketingLayout'
 import { Landing } from '@/pages/Landing'
 import { LegalPage } from '@/pages/Legal'
 import { NotFound } from '@/pages/NotFound'
+import { Docs } from '@/pages/Docs'
 import { Login } from '@/pages/auth/Login'
 import { Register } from '@/pages/auth/Register'
 import { ForgotPassword } from '@/pages/auth/ForgotPassword'
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="register" element={<Register locale={locale} />} />
           <Route path="recuperar-senha" element={<ForgotPassword locale={locale} />} />
           <Route path="resetar-senha" element={<ResetPassword locale={locale} />} />
+          <Route path="docs" element={<Docs locale={locale} />} />
         </Route>
       ))}
       {LOCALES.map((locale) => (
