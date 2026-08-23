@@ -1,144 +1,132 @@
-import { ArrowRight, Clock3, CreditCard, Globe2, ShieldCheck, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import type { Locale } from '@/i18n/routing'
+import { homePath, sandboxPath, sectionPath } from '@/i18n/routing'
+import { homeContent } from '@/content/home'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { FAQAccordion } from '@/components/features/FAQAccordion'
-import { BuyUsdtWidget } from '@/components/features/BuyUsdtWidget'
+import { Container } from '@/components/ui/container'
+import { Notice } from '@/components/ui/notice'
+import { SectionHeading } from '@/components/ui/section-heading'
+import { Surface } from '@/components/ui/surface'
+import { SettlementEventPanel } from '@/components/marketing/SettlementEventPanel'
+import { InfrastructureDiagram } from '@/components/marketing/InfrastructureDiagram'
+import { PageMetadata } from '@/components/seo/PageMetadata'
 
-const benefits = [
-  {
-    icon: Wallet,
-    title: 'Direto para a carteira',
-    desc: 'USDT entregue diretamente na carteira do cliente. Sem saldo interno ou custódia na plataforma.',
-  },
-  {
-    icon: Clock3,
-    title: 'Processamento rápido',
-    desc: 'Fluxo Pix para USDT desenhado para confirmação e entrega em poucos minutos.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Taxas competitivas',
-    desc: 'Cotação clara, taxas transparentes e quantidade estimada de USDT antes do pagamento.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Infraestrutura segura',
-    desc: 'Infraestrutura robusta de pagamentos e stablecoins para operações internacionais.',
-  },
-]
-
-const walletOptions = ['MetaMask', 'Trust Wallet', 'Rabby', 'Coinbase Wallet', 'WalletConnect']
-
-export function Landing() {
+export function Landing({ locale }: { locale: Locale }) {
+  const content = homeContent[locale]
   return (
-    <div className="min-h-screen bg-surface text-text-primary">
-      <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
-        <div className="absolute inset-0 subtle-grid opacity-60" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-300/60 to-transparent" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[1fr_0.92fr] lg:items-center">
-            <div className="animate-fade-in">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-teal-200">
-                <Globe2 className="h-3.5 w-3.5" />
-                Infraestrutura de pagamentos cross-border
-              </div>
-              <h1 className="max-w-4xl text-5xl font-extrabold tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl">
-                Compre USDT direto para sua carteira
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-text-secondary sm:text-xl">
-                Acesso rápido, simples e seguro a dólares digitais pela Peragus.
-              </p>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-text-tertiary">
-                A Peragus conecta moedas fiduciárias locais por meio de liquidação baseada em stablecoins.
-              </p>
-              <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <a href="#buy-usdt">
-                  <Button size="lg" className="w-full sm:w-auto">
-                    Comprar USDT
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </a>
-                <a href="#learn-more">
-                  <Button variant="outline" size="lg" className="w-full border-white/20 bg-white/8 text-white hover:bg-white/14 sm:w-auto">
-                    Saiba mais
-                  </Button>
-                </a>
-              </div>
+    <>
+      <PageMetadata
+        locale={locale}
+        title={content.seo.title}
+        description={content.seo.description}
+        canonicalPath={homePath(locale)}
+        alternates={{ pt: homePath('pt'), es: homePath('es'), en: homePath('en') }}
+      />
+      <main id="main-content" tabIndex={-1}>
+      {/* 1. Hero */}
+      <section className="relative overflow-hidden pb-20 pt-32 sm:pb-28 sm:pt-40">
+        <Container className="grid gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[.14em] text-mint">{content.hero.label}</p>
+            <h1 className="mt-5 max-w-4xl text-[clamp(2.6rem,7vw,5.8rem)] font-semibold leading-[.96] tracking-[-.055em]">{content.hero.title}</h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-secondary sm:text-lg">{content.hero.description}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg"><Link to={sandboxPath(locale, 'register')}>{content.hero.primaryCta}</Link></Button>
+              <Button asChild size="lg" variant="secondary"><Link to={sectionPath(locale, 'como-funciona')}>{content.hero.secondaryCta}</Link></Button>
             </div>
-
-            <BuyUsdtWidget />
           </div>
-        </div>
+          <SettlementEventPanel content={content.eventPanel} />
+        </Container>
       </section>
 
-      <section id="learn-more" className="border-y border-white/10 bg-[#0d2754] py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 max-w-3xl">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-teal-200">Entrega na carteira</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Conecte sua carteira ou informe um endereço.</h2>
-            <p className="mt-5 text-lg leading-8 text-text-secondary">
-              Clientes podem conectar MetaMask, Trust Wallet, Rabby, Coinbase Wallet, WalletConnect ou informar manualmente outro endereço compatível.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {walletOptions.map((wallet) => (
-              <div key={wallet} className="rounded-2xl border border-white/12 bg-white/8 p-4 text-sm font-bold text-white">
-                {wallet}
-              </div>
+      {/* 2. Transparency Strip */}
+      <section aria-label={content.transparency[0].title} className="border-y border-line">
+        <Container className="grid sm:grid-cols-2 lg:grid-cols-4">
+          {content.transparency.map((item) => (
+            <div key={item.title} className="border-line py-6 lg:border-r lg:px-5">
+              <h2 className="text-sm font-semibold">{item.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-tertiary">{item.body}</p>
+            </div>
+          ))}
+        </Container>
+      </section>
+
+      {/* 3. How It Works */}
+      <section id="como-funciona" className="scroll-mt-24 py-24 sm:py-32">
+        <Container>
+          <SectionHeading eyebrow={content.howItWorks.eyebrow} title={content.howItWorks.title} description={content.howItWorks.description} />
+          <ol className="mt-12 grid gap-8 md:grid-cols-3">
+            {content.howItWorks.steps.map((step, index) => (
+              <li key={step.title} className="border-t-2 border-line pt-5">
+                <span className="font-mono text-xs text-mint">0{index + 1}</span>
+                <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-tertiary">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </Container>
+      </section>
+
+      {/* 4. Operational Control */}
+      <section id="produto" className="scroll-mt-24 border-y border-line bg-surface/35 py-24 sm:py-32">
+        <Container className="grid gap-12 lg:grid-cols-[.85fr_1.15fr]">
+          <SectionHeading eyebrow={content.operations.eyebrow} title={content.operations.title} description={content.operations.description} />
+          <div>
+            {content.operations.items.map((item, index) => (
+              <article key={item.title} className="grid grid-cols-[2rem_1fr] gap-4 border-t border-line py-5">
+                <span className="font-mono text-xs text-mint">0{index + 1}</span>
+                <div>
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-tertiary">{item.body}</p>
+                </div>
+              </article>
             ))}
           </div>
-        </div>
+        </Container>
       </section>
 
-      <section id="benefits" className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 max-w-2xl">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-teal-200">Benefícios</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Criado para acesso simples e confiável a dólares digitais.</h2>
+      {/* 5. Use Cases */}
+      <section className="py-24 sm:py-32">
+        <Container>
+          <SectionHeading eyebrow={content.useCases.eyebrow} title={content.useCases.title} />
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {[content.useCases.merchant, content.useCases.acquirer].map((useCase) => (
+              <Surface key={useCase.title} className="p-6 sm:p-8">
+                <h3 className="text-xl font-semibold">{useCase.title}</h3>
+                <p className="mt-4 text-sm leading-7 text-secondary">{useCase.body}</p>
+              </Surface>
+            ))}
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {benefits.map((benefit) => {
-              const Icon = benefit.icon
-              return (
-                <Card key={benefit.title} className="border-white/12 bg-white/8">
-                  <CardContent className="p-6">
-                    <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-teal-400/15 text-teal-200">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white">{benefit.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-text-secondary">{benefit.desc}</p>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
+        </Container>
       </section>
 
-      <section className="border-y border-white/10 bg-white py-20 text-[#0f172a] sm:py-28">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl">Transforme moeda local em dólares digitais com confiança.</h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-[#475569]">A Peragus combina acesso a pagamentos locais, liquidação baseada em stablecoins e entrega direta na carteira.</p>
-          <div className="mt-8">
-            <a href="#buy-usdt">
-              <Button size="lg">
-                Comprar USDT
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </a>
-          </div>
-        </div>
+      {/* 6. Infrastructure */}
+      <section id="infraestrutura" className="scroll-mt-24 border-y border-line bg-surface/35 py-24 sm:py-32">
+        <Container>
+          <SectionHeading eyebrow={content.infrastructure.eyebrow} title={content.infrastructure.title} description={content.infrastructure.description} />
+          <InfrastructureDiagram nodes={content.infrastructure.nodes} />
+        </Container>
       </section>
 
-      <section id="faq" className="py-20 sm:py-28">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Perguntas frequentes</h2>
-            <p className="mt-4 text-lg text-text-secondary">Saiba mais sobre comprar USDT pela Peragus.</p>
-          </div>
-          <FAQAccordion />
-        </div>
+      {/* 7. Security Disclosure */}
+      <section id="seguranca" className="scroll-mt-24 py-24 sm:py-32">
+        <Container>
+          <SectionHeading eyebrow={content.disclosure.eyebrow} title={content.disclosure.title} />
+          <Notice tone="sandbox" className="mt-8">{content.disclosure.body}</Notice>
+        </Container>
       </section>
-    </div>
+
+      {/* 8. Final CTA */}
+      <section className="border-t border-line py-24 text-center sm:py-32">
+        <Container>
+          <SectionHeading align="center" eyebrow={content.finalCta.eyebrow} title={content.finalCta.title} description={content.finalCta.body} />
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button asChild size="lg"><Link to={sandboxPath(locale, 'register')}>{content.finalCta.primary}</Link></Button>
+            <Button asChild size="lg" variant="secondary"><Link to={sandboxPath(locale, 'docs')}>{content.finalCta.secondary}</Link></Button>
+          </div>
+        </Container>
+      </section>
+      </main>
+    </>
   )
 }
