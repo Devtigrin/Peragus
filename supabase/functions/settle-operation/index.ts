@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { ethers } from 'npm:ethers@6.13.5'
-import { fail, handleOptions, HttpError, json, readJson } from '../_shared/http.ts'
+import { fail, handleOptions, HttpError, json, readJson, rethrow } from '../_shared/http.ts'
 import { requireString } from '../_shared/pix.ts'
 
 const ERC20_ABI = [
@@ -33,18 +33,28 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   })
 
+  let operationIdRef: string | null = null
   try {
     const body = await readJson(req)
     const operation_id = requireString(body, 'operation_id')
+    operationIdRef = operation_id
 
     const { data: op, error } = await admin
       .from('operations')
-      .select('id, status, usdt_amount_text, receiver_wallet')
+      .select('id, status, usdt_amount_text, receiver_wallet, updated_at')
       .eq('id', operation_id)
       .maybeSingle()
-    if (error) throw error
+    if (error) rethrow(error)
     if (!op) throw new HttpError(404, 'Operation not found')
-    if (op.status !== 'pix_confirmed') throw new HttpError(409, `Cannot settle from status ${op.status}`)
+
+    // Allow fresh pix_confirmed ops, or orphaned `settling` ops whose worker
+    // died mid-flight (> 5 min without progress).
+    const stale =
+      op.status === 'settling' &&
+      (Date.now() - new Date(op.updated_at as string).getTime()) > 5 * 60_000
+    if (op.status !== 'pix_confirmed' && !stale) {
+      throw new HttpError(409, `Cannot settle from status ${op.status}`)
+    }
     if (!op.usdt_amount_text || !op.receiver_wallet)
       throw new HttpError(409, 'Operation missing amount or receiver')
 
@@ -72,7 +82,9 @@ Deno.serve(async (req) => {
 
     const tx = await token.transfer(op.receiver_wallet as string, amountInUnits)
     const receipt = await withTimeout(tx.wait(), 180_000)
-    const success = receipt.status === 1n
+    // ethers v6 returns `status` as a plain number (1 = success); comparing
+    // against 1n would always be false.
+    const success = Number(receipt.status) === 1
 
     await admin
       .from('operations')
@@ -92,15 +104,14 @@ Deno.serve(async (req) => {
   } catch (err) {
     // Any failure after 'settling' marks the op failed with the reason.
     try {
-      const b = (await req.clone().json().catch(() => null)) as { operation_id?: string } | null
-      if (b?.operation_id) {
+      if (typeof operationIdRef === 'string' && operationIdRef) {
         await admin
           .from('operations')
           .update({
             status: 'failed',
             error_message: err instanceof Error ? err.message : String(err),
           })
-          .eq('id', b.operation_id)
+          .eq('id', operationIdRef)
           .neq('status', 'confirmed')
       }
     } catch {

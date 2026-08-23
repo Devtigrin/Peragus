@@ -32,6 +32,18 @@ alter table public.operations
 create unique index if not exists operations_user_request_unique
   on public.operations (user_id, request_id);
 
+-- 2b. Legacy `amount` numeric is superseded by usdt_amount_text (spec decision):
+-- make nullable so new code never writes it.
+alter table public.operations alter column amount drop not null;
+
+-- 2c. Edge Functions use the service role key; ensure it can write operations
+-- (legacy table predates this project and had no such grant).
+grant select, insert, update on table public.operations to service_role;
+
+-- 2d. Legacy denormalized hot-wallet field superseded by sender_wallet /
+-- receiver_wallet (spec); make nullable so creation flow never fabricates it.
+alter table public.operations alter column wallet_address drop not null;
+
 -- 3. API keys
 create table if not exists public.api_keys (
   id uuid primary key default gen_random_uuid(),

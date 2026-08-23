@@ -36,8 +36,36 @@ export function rateLimit(key: string): void {
 
 export function fail(err: unknown): Response {
   const status = err instanceof HttpError ? err.status : 400
-  const message = err instanceof Error ? err.message : String(err)
+  let message: string
+  if (err instanceof HttpError || err instanceof Error) {
+    message = err.message
+  } else if (typeof err === 'string') {
+    message = err
+  } else {
+    try {
+      message = JSON.stringify(err) ?? 'Unknown error'
+    } catch {
+      message = 'Unknown error'
+    }
+  }
   return json({ error: message }, status)
+}
+
+// Normalize non-Error Supabase/Postgrest failures so their `.message`
+// survives instead of collapsing into "[object Object]".
+export function rethrow(err: unknown): never {
+  if (err instanceof HttpError || err instanceof Error || typeof err === 'string') throw err
+  const e = err as { message?: unknown }
+  if (e && typeof e.message === 'string' && e.message.length > 0) throw new Error(e.message)
+  throw new Error(failSafe(err))
+}
+
+function failSafe(err: unknown): string {
+  try {
+    return JSON.stringify(err) ?? 'Unknown error'
+  } catch {
+    return 'Unknown error'
+  }
 }
 
 export async function readJson(req: Request): Promise<Record<string, unknown>> {

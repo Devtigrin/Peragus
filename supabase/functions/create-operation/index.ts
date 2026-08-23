@@ -1,5 +1,5 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
-import { fail, handleOptions, HttpError, json, rateLimit, readJson } from '../_shared/http.ts'
+import { fail, handleOptions, HttpError, json, rateLimit, readJson, rethrow } from '../_shared/http.ts'
 import { generatePixCode, requireAmountText, requireWallet } from '../_shared/pix.ts'
 
 Deno.serve(async (req) => {
@@ -22,11 +22,16 @@ Deno.serve(async (req) => {
     // Brand rule: the sandbox token is MockUSDT. Never accept "USDT".
     const token_symbol = 'MOCKUSDT'
 
+    // Pre-generate id so the simulated Pix code can be written in the same insert.
+    const operationId = crypto.randomUUID()
+    const pix_code = generatePixCode(operationId)
+
     let row: Record<string, unknown> | null = null
     try {
       const { data, error } = await admin
         .from('operations')
         .insert({
+          id: operationId,
           user_id: userId,
           request_id,
           status: 'created',
@@ -35,21 +40,23 @@ Deno.serve(async (req) => {
           usdt_amount_text: amount,
           receiver_wallet,
           request_json: {},
+          pix_code,
           error_message: null,
         })
         .select('*')
         .single()
-      if (error) throw error
+      if (error) rethrow(error)
       row = data
     } catch (err) {
       const code = (err as { code?: string })?.code
-      if (code !== '23505') throw err
-      const { data: existing } = await admin
+      if (code !== '23505') rethrow(err)
+      const { data: existing, error: exErr } = await admin
         .from('operations')
         .select('*')
         .eq('user_id', userId)
         .eq('request_id', request_id)
         .maybeSingle()
+      if (exErr) rethrow(exErr)
       if (!existing) throw new HttpError(409, 'Idempotency collision but operation not found')
       return json({
         ok: true,
@@ -57,13 +64,10 @@ Deno.serve(async (req) => {
         operation: {
           id: existing.id,
           status: existing.status,
-          pix_code: (existing.request_json as Record<string, unknown>)?.pix_code ?? null,
+          pix_code: (existing as { pix_code?: string }).pix_code ?? null,
         },
       })
     }
-
-    const pix_code = generatePixCode(row!.id as string)
-    await admin.from('operations').update({ request_json: { pix_code } }).eq('id', row!.id)
 
     return json(
       {
