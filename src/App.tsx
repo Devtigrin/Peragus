@@ -11,6 +11,7 @@ import { RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/app/AppLayout'
 import { Operations } from '@/pages/app/Operations'
 import { ApiKeys } from '@/pages/app/ApiKeys'
+import { Settings } from '@/pages/app/Settings'
 import { LOCALES, appPath, homePath, localeFromPathname } from '@/i18n/routing'
 
 function LocalizedNotFound() {
@@ -43,6 +44,7 @@ export default function App() {
                 <Routes>
                   <Route index element={<Operations locale={locale} />} />
                   <Route path="chaves-api" element={<ApiKeys locale={locale} />} />
+                  <Route path="configuracoes" element={<Settings locale={locale} />} />
                 </Routes>
               </AppLayout>
             </RequireAuth>
