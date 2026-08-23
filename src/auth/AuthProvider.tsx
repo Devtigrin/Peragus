@@ -8,7 +8,10 @@ interface AuthState {
   loading: boolean
   signIn: (email: string, password: string) => ReturnType<typeof supabase.auth.signInWithPassword>
   signUp: (email: string, password: string) => ReturnType<typeof supabase.auth.signUp>
-  sendReset: (email: string) => ReturnType<typeof supabase.auth.resetPasswordForEmail>
+  sendReset: (
+    email: string,
+    options?: { redirectTo?: string },
+  ) => ReturnType<typeof supabase.auth.resetPasswordForEmail>
   updatePassword: (password: string) => ReturnType<typeof supabase.auth.updateUser>
   signOut: () => Promise<void>
 }
@@ -34,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     signUp: (email, password) => supabase.auth.signUp({ email, password }),
-    sendReset: (email) => supabase.auth.resetPasswordForEmail(email),
+    sendReset: (email, options) => supabase.auth.resetPasswordForEmail(email, options),
     updatePassword: (password) => supabase.auth.updateUser({ password }),
     signOut: async () => {
     await supabase.auth.signOut()

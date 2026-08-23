@@ -7,7 +7,10 @@ import { Login } from '@/pages/auth/Login'
 import { Register } from '@/pages/auth/Register'
 import { ForgotPassword } from '@/pages/auth/ForgotPassword'
 import { ResetPassword } from '@/pages/auth/ResetPassword'
-import { LOCALES, homePath, localeFromPathname } from '@/i18n/routing'
+import { RequireAuth } from '@/auth/RequireAuth'
+import { AppLayout } from '@/components/app/AppLayout'
+import { Operations } from '@/pages/app/Operations'
+import { LOCALES, appPath, homePath, localeFromPathname } from '@/i18n/routing'
 
 function LocalizedNotFound() {
   const location = useLocation()
@@ -28,6 +31,19 @@ export default function App() {
           <Route path="recuperar-senha" element={<ForgotPassword locale={locale} />} />
           <Route path="resetar-senha" element={<ResetPassword locale={locale} />} />
         </Route>
+      ))}
+      {LOCALES.map((locale) => (
+        <Route
+          key={locale}
+          path={appPath(locale)}
+          element={
+            <RequireAuth>
+              <AppLayout locale={locale}>
+                <Operations locale={locale} />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
       ))}
       <Route path="*" element={<LocalizedNotFound />} />
     </Routes>
