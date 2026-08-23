@@ -1,5 +1,3 @@
-import type { Locale } from '@/i18n/routing'
-
 export interface AuthContent {
   backToHome: string
   seo: { title: string; description: string }

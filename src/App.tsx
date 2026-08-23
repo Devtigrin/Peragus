@@ -5,6 +5,8 @@ import { LegalPage } from '@/pages/Legal'
 import { NotFound } from '@/pages/NotFound'
 import { Login } from '@/pages/auth/Login'
 import { Register } from '@/pages/auth/Register'
+import { ForgotPassword } from '@/pages/auth/ForgotPassword'
+import { ResetPassword } from '@/pages/auth/ResetPassword'
 import { LOCALES, homePath, localeFromPathname } from '@/i18n/routing'
 
 function LocalizedNotFound() {
@@ -23,6 +25,8 @@ export default function App() {
           ))}
           <Route path="login" element={<Login locale={locale} />} />
           <Route path="register" element={<Register locale={locale} />} />
+          <Route path="recuperar-senha" element={<ForgotPassword locale={locale} />} />
+          <Route path="resetar-senha" element={<ResetPassword locale={locale} />} />
         </Route>
       ))}
       <Route path="*" element={<LocalizedNotFound />} />
