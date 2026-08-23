@@ -15,19 +15,19 @@ export function Docs({ locale }: { locale: Locale }) {
         canonicalPath={canonical}
         alternates={{ pt: '/docs', es: '/es/docs', en: '/en/docs' }}
       />
-      <div className="mx-auto flex max-w-7xl flex-col gap-10 lg:flex-row">
+      <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-8 lg:flex-row lg:px-6">
         <nav
           aria-label={c.endpointsTitle}
           className="lg:w-56 lg:shrink-0 lg:sticky lg:top-24 lg:self-start"
         >
-          <ul className="flex gap-2 overflow-x-auto pb-2 text-sm lg:flex-col lg:overflow-visible">
+          <ul className="flex flex-wrap gap-1 text-sm lg:flex-col">
             {[
               { href: '#intro', label: c.intro.slice(0, 24) + '…' },
               { href: '#auth', label: c.authTitle },
               ...c.endpoints.map((e) => ({ href: `#${e.id}`, label: e.title })),
               { href: '#errors', label: c.errorsTitle },
             ].map((item) => (
-              <li key={item.href} className="shrink-0">
+              <li key={item.href}>
                 <a
                   href={item.href}
                   className="block min-h-11 rounded-lg px-3 py-2.5 leading-tight text-secondary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
@@ -51,7 +51,11 @@ export function Docs({ locale }: { locale: Locale }) {
             <p className="mt-4 text-xs font-medium uppercase tracking-wide text-tertiary">
               {c.baseUrlLabel}: <code>{c.endpoints[0].path.replace('/create-operation', '')}</code>
             </p>
-            <pre className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed">
+            <pre
+              tabIndex={0}
+              aria-label={c.baseUrlLabel}
+              className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
+            >
               <code>{c.authExample}</code>
             </pre>
           </section>
@@ -67,7 +71,11 @@ export function Docs({ locale }: { locale: Locale }) {
                   {e.title}
                 </h3>
                 <p className="mt-2 max-w-prose text-sm text-secondary">{e.description}</p>
-                <pre className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed">
+                <pre
+                  tabIndex={0}
+                  aria-label={`${e.title} — ${e.method}`}
+                  className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
+                >
                   <code>
                     {`${e.method === 'POST' ? 'curl -X POST' : 'curl'} "${e.path}"`}
                     {'\n'}
@@ -75,7 +83,11 @@ export function Docs({ locale }: { locale: Locale }) {
                   </code>
                 </pre>
                 <p className="mt-2 text-xs uppercase tracking-wide text-tertiary">200</p>
-                <pre className="mt-1 overflow-x-auto rounded-lg border border-line bg-surface p-4 font-mono text-xs leading-relaxed">
+                <pre
+                  tabIndex={0}
+                  aria-label={`${e.title} — response`}
+                  className="mt-1 overflow-x-auto rounded-lg border border-line bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
+                >
                   <code>{e.response}</code>
                 </pre>
               </div>
@@ -127,7 +139,7 @@ export function Docs({ locale }: { locale: Locale }) {
             </p>
           </section>
         </article>
-      </div>
+      </main>
     </>
   )
 }

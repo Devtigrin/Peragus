@@ -32,7 +32,7 @@ async function sha256Hex(s: string): Promise<string> {
 }
 
 async function verifyApiKey(req: Request, admin: SupabaseClient): Promise<string> {
-  const raw = bearer(req)
+  const raw = req.headers.get('x-api-key') ?? bearer(req)
   if (!raw.startsWith('pk_live_')) throw new HttpError(401, 'Unauthorized: invalid credentials')
   const hash = await sha256Hex(raw)
   const { data, error } = await admin
@@ -53,7 +53,10 @@ export function adminClient(): SupabaseClient {
 }
 
 export async function authenticate(req: Request, admin: SupabaseClient): Promise<AuthContext> {
-  const raw = (req.headers.get('Authorization') ?? '').slice(7).trim()
-  if (raw.startsWith('pk_live_')) return { userId: await verifyApiKey(req, admin), via: 'api_key' }
+  const apiKey = req.headers.get('x-api-key') ?? ''
+  const bearerRaw = (req.headers.get('Authorization') ?? '').slice(7).trim()
+  if (apiKey.startsWith('pk_live_') || bearerRaw.startsWith('pk_live_')) {
+    return { userId: await verifyApiKey(req, admin), via: 'api_key' }
+  }
   return { userId: await verifyJwt(req), via: 'jwt' }
 }

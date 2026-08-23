@@ -75,7 +75,7 @@ export function Operations({ locale }: { locale: Locale }) {
     try {
       await callEdge('create-operation', {
         body: {
-          amount_usdt: Number(amount.replace(',', '.')),
+          amount: amount.replace(',', '.'),
           receiver_wallet: wallet,
           token_symbol: 'MockUSDT',
         },
@@ -93,7 +93,7 @@ export function Operations({ locale }: { locale: Locale }) {
 
   async function confirmPix(id: string) {
     try {
-      await callEdge(`confirm-pix/${id}`, { method: 'POST' })
+      await callEdge('confirm-pix', { method: 'POST', body: { operation_id: id } })
       await load()
     } catch {
       await load()

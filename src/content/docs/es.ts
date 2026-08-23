@@ -1,4 +1,4 @@
-import type { DocsContent } from './types'
+﻿import type { DocsContent } from './types'
 
 const BASE = 'https://iifcwnumpccoucxggxjb.supabase.co/functions/v1'
 
@@ -26,7 +26,7 @@ export const es: DocsContent = {
       method: 'POST',
       path: `${BASE}/create-operation`,
       request: `{
-  "amount_usdt": 25,
+  "amount": "25",
   "receiver_wallet": "0xA15Bb723c2d9d3e0CBfFb6061EbF5a4E4A4D8567",
   "token_symbol": "MockUSDT"
 }`,
@@ -45,8 +45,10 @@ export const es: DocsContent = {
       description:
         'Confirma el pago simulado del Pix. En producción este paso vendría del PSP; en el sandbox se dispara explícitamente e inicia la liquidación on-chain.',
       method: 'POST',
-      path: `${BASE}/confirm-pix/{operation_id}`,
-      request: '(cuerpo vacío)',
+      path: `${BASE}/confirm-pix`,
+      request: `{
+  "operation_id": "04183a42-a2c9-4ad9-ba3c-d9f6718dd7f8"
+}`,
       response: `{
   "ok": true
 }`,
@@ -59,7 +61,7 @@ export const es: DocsContent = {
       path: `${BASE}/list-operations`,
       request: '(sin cuerpo)',
       response: `[
-  { "id": "…", "status": "confirmed", "usdt_amount_text": "25.000000", … }
+  { "id": "f7319d42-…", "status": "confirmed", "usdt_amount_text": "25.000000" }
 ]`,
     },
     {
@@ -67,7 +69,7 @@ export const es: DocsContent = {
       title: 'Estado de una operación',
       description: 'Consulta puntual del estado actual de una operación específica.',
       method: 'GET',
-      path: `${BASE}/get-operation-status/{operation_id}`,
+      path: `${BASE}/get-operation-status?id={operation_id}`,
       request: '(sin cuerpo)',
       response: `{
   "id": "f7319d42-…",

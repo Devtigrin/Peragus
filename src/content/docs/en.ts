@@ -1,4 +1,4 @@
-import type { DocsContent } from './types'
+﻿import type { DocsContent } from './types'
 
 const BASE = 'https://iifcwnumpccoucxggxjb.supabase.co/functions/v1'
 
@@ -26,7 +26,7 @@ export const en: DocsContent = {
       method: 'POST',
       path: `${BASE}/create-operation`,
       request: `{
-  "amount_usdt": 25,
+  "amount": "25",
   "receiver_wallet": "0xA15Bb723c2d9d3e0CBfFb6061EbF5a4E4A4D8567",
   "token_symbol": "MockUSDT"
 }`,
@@ -45,8 +45,10 @@ export const en: DocsContent = {
       description:
         'Confirms the simulated Pix payment. In production this step would come from the PSP; in the sandbox it is triggered explicitly and kicks off the on-chain settlement.',
       method: 'POST',
-      path: `${BASE}/confirm-pix/{operation_id}`,
-      request: '(empty body)',
+      path: `${BASE}/confirm-pix`,
+      request: `{
+  "operation_id": "04183a42-a2c9-4ad9-ba3c-d9f6718dd7f8"
+}`,
       response: `{
   "ok": true
 }`,
@@ -59,7 +61,7 @@ export const en: DocsContent = {
       path: `${BASE}/list-operations`,
       request: '(no body)',
       response: `[
-  { "id": "…", "status": "confirmed", "usdt_amount_text": "25.000000", … }
+  { "id": "f7319d42-…", "status": "confirmed", "usdt_amount_text": "25.000000" }
 ]`,
     },
     {
@@ -67,7 +69,7 @@ export const en: DocsContent = {
       title: 'Operation status',
       description: 'Point query of the current status for a specific operation.',
       method: 'GET',
-      path: `${BASE}/get-operation-status/{operation_id}`,
+      path: `${BASE}/get-operation-status?id={operation_id}`,
       request: '(no body)',
       response: `{
   "id": "f7319d42-…",

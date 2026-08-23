@@ -69,8 +69,11 @@ function failSafe(err: unknown): string {
 }
 
 export async function readJson(req: Request): Promise<Record<string, unknown>> {
+  const raw = await req.text()
+  // Empty body on POST is a valid "no fields" request (e.g. confirm-pix).
+  if (raw.trim().length === 0) return {}
   try {
-    const body = await req.json()
+    const body = JSON.parse(raw)
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('bad json')
     return body as Record<string, unknown>
   } catch {

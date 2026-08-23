@@ -98,3 +98,7 @@ end $$;
 
 revoke execute on function public.create_api_key(text) from public, anon;
 grant execute on function public.create_api_key(text) to authenticated;
+
+-- Edge Functions resolve API keys and stamp last_used_at with the
+-- service role; default privileges on this table omit those grants.
+grant select, update on table public.api_keys to service_role;
