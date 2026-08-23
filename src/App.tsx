@@ -3,6 +3,8 @@ import { MarketingLayout } from '@/components/layout/MarketingLayout'
 import { Landing } from '@/pages/Landing'
 import { LegalPage } from '@/pages/Legal'
 import { NotFound } from '@/pages/NotFound'
+import { Login } from '@/pages/auth/Login'
+import { Register } from '@/pages/auth/Register'
 import { LOCALES, homePath, localeFromPathname } from '@/i18n/routing'
 
 function LocalizedNotFound() {
@@ -19,6 +21,8 @@ export default function App() {
           {(['terms', 'privacy', 'compliance', 'security'] as const).map((type) => (
             <Route key={type} path={type} element={<LegalPage locale={locale} type={type} />} />
           ))}
+          <Route path="login" element={<Login locale={locale} />} />
+          <Route path="register" element={<Register locale={locale} />} />
         </Route>
       ))}
       <Route path="*" element={<LocalizedNotFound />} />
