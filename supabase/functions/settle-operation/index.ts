@@ -26,6 +26,13 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 Deno.serve(async (req) => {
   const options = handleOptions(req)
   if (options) return options
+
+  const internalSecret = Deno.env.get('INTERNAL_SETTLE_SECRET')
+  const callerSecret = req.headers.get('x-internal-secret')
+  if (!internalSecret || callerSecret !== internalSecret) {
+    return fail(new HttpError(401, 'Unauthorized: internal endpoint'))
+  }
+
   if (req.method !== 'POST') return fail(new HttpError(405, 'Method Not Allowed'))
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!

@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/settle-operation`, {
         method: 'POST',
         headers: {
-          Authorization: req.headers.get('Authorization') ?? '',
+          'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ operation_id }),
