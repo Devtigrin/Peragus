@@ -1,6 +1,13 @@
+const ALLOWED_ORIGINS = [
+  'https://peragus.com.br',
+  'https://www.peragus.com.br',
+  'http://localhost:5173',
+  'http://localhost:4173',
+]
+
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0],
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
@@ -12,7 +19,12 @@ export function json(data: unknown, status = 200): Response {
 }
 
 export function handleOptions(req: Request): Response | null {
-  return req.method === 'OPTIONS' ? new Response('ok', { headers: corsHeaders }) : null
+  if (req.method !== 'OPTIONS') return null
+  const origin = req.headers.get('origin') ?? ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return new Response('ok', {
+    headers: { ...corsHeaders, 'Access-Control-Allow-Origin': allowedOrigin },
+  })
 }
 
 export class HttpError extends Error {
