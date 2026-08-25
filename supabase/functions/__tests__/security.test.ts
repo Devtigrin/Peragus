@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { validate, createOperationSchema, confirmPixSchema, getOperationStatusSchema, listOperationsSchema } from '../_shared/validation.ts'
-import { assertValidTransition } from '../_shared/state-machine.ts'
 
 describe('Validation - createOperationSchema', () => {
   const validWallet = '0x' + 'a'.repeat(40)
