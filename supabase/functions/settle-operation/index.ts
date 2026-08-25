@@ -4,6 +4,7 @@ import { fail, handleOptions, HttpError, json, readJson, rethrow } from '../_sha
 import { requireString } from '../_shared/pix.ts'
 import { assertValidTransition } from '../_shared/state-machine.ts'
 import { writeAuditLog } from '../_shared/audit.ts'
+import { logger } from '../_shared/logger.ts'
 
 const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
@@ -47,6 +48,7 @@ Deno.serve(async (req) => {
     const body = await readJson(req)
     const operation_id = requireString(body, 'operation_id')
     operationIdRef = operation_id
+    logger.info('settle-operation started', { operation_id, function: 'settle-operation' })
 
     const { data: op, error } = await admin
       .from('operations')
@@ -102,15 +104,15 @@ Deno.serve(async (req) => {
     }
 
     const token = new ethers.Contract(contractAddress, ERC20_ABI, wallet)
-    const decimalsOnChain = Number(await token.decimals())
+    const decimalsOnChain = Number(await withTimeout(token.decimals(), 30_000))
     if (decimalsOnChain !== expectedDecimals) {
       throw new Error(`decimals mismatch: expected ${expectedDecimals}, got ${decimalsOnChain}`)
     }
 
     const amountInUnits = ethers.parseUnits(op.usdt_amount_text as string, decimalsOnChain)
-    const balance: bigint = await token.balanceOf(wallet.address)
+    const balance: bigint = await withTimeout(token.balanceOf(wallet.address), 30_000)
     if (balance < amountInUnits) throw new Error('insufficient MockUSDT balance in hot wallet')
-    const native: bigint = await provider.getBalance(wallet.address)
+    const native: bigint = await withTimeout(provider.getBalance(wallet.address), 30_000)
     if (native <= 0n) throw new Error('insufficient native balance for gas in hot wallet')
 
     const tx = await token.transfer(op.receiver_wallet as string, amountInUnits)
@@ -140,8 +142,10 @@ Deno.serve(async (req) => {
       metadata: { tx_hash: receipt.hash, block_number: receipt.blockNumber },
     })
 
+    logger.info('settle-operation completed', { operation_id, tx_hash: receipt.hash, function: 'settle-operation' })
     return json({ ok: true, status: success ? 'confirmed' : 'failed', tx_hash: receipt.hash })
   } catch (err) {
+    logger.error('settle-operation failed', { operation_id: operationIdRef ?? undefined, error: err instanceof Error ? err.message : String(err), function: 'settle-operation' })
     // Any failure after 'settling' marks the op failed with the reason.
     try {
       if (typeof operationIdRef === 'string' && operationIdRef) {
