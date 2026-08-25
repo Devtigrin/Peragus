@@ -1,6 +1,8 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit, readJson } from '../_shared/http.ts'
 import { validate, confirmPixSchema } from '../_shared/validation.ts'
+import { assertValidTransition } from '../_shared/state-machine.ts'
+import { writeAuditLog } from '../_shared/audit.ts'
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -23,9 +25,7 @@ Deno.serve(async (req) => {
     if (!op) throw new HttpError(404, 'Operation not found')
 
     const current = op.status as string
-    if (!['created', 'pix_pending'].includes(current)) {
-      throw new HttpError(409, `Cannot confirm pix from status ${current}`)
-    }
+    assertValidTransition(current, 'pix_confirmed')
 
     // Simulated provider approval: sandbox MVP confirms instantly.
     const requestJson = (op.request_json ?? {}) as Record<string, unknown>
@@ -41,6 +41,14 @@ Deno.serve(async (req) => {
       .select('id, status')
       .single()
     if (upErr) throw upErr
+
+    await writeAuditLog(admin, {
+      user_id: userId,
+      action: 'OPERATION_PIX_CONFIRMED',
+      resource_type: 'operation',
+      resource_id: operation_id,
+      metadata: { previous_status: current },
+    })
 
     // Fire-and-forget settlement.
     EdgeRuntime.waitUntil(

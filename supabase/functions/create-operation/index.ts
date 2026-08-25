@@ -2,6 +2,7 @@ import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit, readJson, rethrow } from '../_shared/http.ts'
 import { generatePixCode } from '../_shared/pix.ts'
 import { validate, createOperationSchema } from '../_shared/validation.ts'
+import { writeAuditLog } from '../_shared/audit.ts'
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -45,6 +46,15 @@ Deno.serve(async (req) => {
         .single()
       if (error) rethrow(error)
       row = data
+
+      await writeAuditLog(admin, {
+        user_id: userId,
+        action: 'OPERATION_CREATED',
+        resource_type: 'operation',
+        resource_id: row!.id,
+        metadata: { amount, receiver_wallet, chain, token_symbol },
+        request_id,
+      })
     } catch (err) {
       const code = (err as { code?: string })?.code
       if (code !== '23505') rethrow(err)

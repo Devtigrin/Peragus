@@ -2,6 +2,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { ethers } from 'npm:ethers@6.13.5'
 import { fail, handleOptions, HttpError, json, readJson, rethrow } from '../_shared/http.ts'
 import { requireString } from '../_shared/pix.ts'
+import { assertValidTransition } from '../_shared/state-machine.ts'
+import { writeAuditLog } from '../_shared/audit.ts'
 
 const ERC20_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
@@ -48,7 +50,7 @@ Deno.serve(async (req) => {
 
     const { data: op, error } = await admin
       .from('operations')
-      .select('id, status, usdt_amount_text, receiver_wallet, updated_at')
+      .select('id, status, usdt_amount_text, receiver_wallet, updated_at, tx_hash')
       .eq('id', operation_id)
       .maybeSingle()
     if (error) rethrow(error)
@@ -59,15 +61,39 @@ Deno.serve(async (req) => {
     const stale =
       op.status === 'settling' &&
       (Date.now() - new Date(op.updated_at as string).getTime()) > 5 * 60_000
-    if (op.status !== 'pix_confirmed' && !stale) {
-      throw new HttpError(409, `Cannot settle from status ${op.status}`)
+    if (!stale) {
+      assertValidTransition(op.status as string, 'settling')
     }
     if (!op.usdt_amount_text || !op.receiver_wallet)
       throw new HttpError(409, 'Operation missing amount or receiver')
 
+    const provider = new ethers.JsonRpcProvider(requireEnv('AMOY_RPC_URL'))
+
+    // Double-spend prevention: if operation already has a tx_hash, check its status before retrying
+    if (stale && op.tx_hash) {
+      try {
+        const existingReceipt = await withTimeout(provider.getTransactionReceipt(op.tx_hash), 30_000)
+        if (existingReceipt) {
+          const existingSuccess = Number(existingReceipt.status) === 1
+          await admin
+            .from('operations')
+            .update({
+              status: existingSuccess ? 'confirmed' : 'failed',
+              tx_hash: existingReceipt.hash,
+              block_number: existingReceipt.blockNumber,
+              gas_used: (existingReceipt as unknown as { gasUsed?: string }).gasUsed?.toString() ?? null,
+              transaction_status: existingSuccess ? 'success' : 'reverted',
+            })
+            .eq('id', operation_id)
+          return json({ ok: true, status: existingSuccess ? 'confirmed' : 'failed', tx_hash: existingReceipt.hash })
+        }
+      } catch {
+        // Unable to check receipt — proceed with retry as fallback
+      }
+    }
+
     await admin.from('operations').update({ status: 'settling', error_message: null }).eq('id', operation_id)
 
-    const provider = new ethers.JsonRpcProvider(requireEnv('AMOY_RPC_URL'))
     const wallet = new ethers.Wallet(requireEnv('HOT_WALLET_PRIVATE_KEY'), provider)
     const contractAddress = requireEnv('MOCKUSDT_CONTRACT_ADDRESS')
     const expectedDecimals = Number(requireEnv('MOCKUSDT_DECIMALS'))
@@ -107,6 +133,13 @@ Deno.serve(async (req) => {
       })
       .eq('id', operation_id)
 
+    await writeAuditLog(admin, {
+      action: 'OPERATION_SETTLEMENT_COMPLETED',
+      resource_type: 'operation',
+      resource_id: operationIdRef ?? undefined,
+      metadata: { tx_hash: receipt.hash, block_number: receipt.blockNumber },
+    })
+
     return json({ ok: true, status: success ? 'confirmed' : 'failed', tx_hash: receipt.hash })
   } catch (err) {
     // Any failure after 'settling' marks the op failed with the reason.
@@ -120,6 +153,12 @@ Deno.serve(async (req) => {
           })
           .eq('id', operationIdRef)
           .neq('status', 'confirmed')
+        await writeAuditLog(admin, {
+          action: 'OPERATION_SETTLEMENT_FAILED',
+          resource_type: 'operation',
+          resource_id: operationIdRef ?? undefined,
+          metadata: { error: err instanceof Error ? err.message : String(err) },
+        })
       }
     } catch {
       // ignore secondary failure
