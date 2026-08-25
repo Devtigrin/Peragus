@@ -1,6 +1,7 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit, readJson, rethrow } from '../_shared/http.ts'
-import { generatePixCode, requireAmountText, requireWallet } from '../_shared/pix.ts'
+import { generatePixCode } from '../_shared/pix.ts'
+import { validate, createOperationSchema } from '../_shared/validation.ts'
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -11,14 +12,11 @@ Deno.serve(async (req) => {
     const { userId } = await authenticate(req, admin)
     rateLimit(userId)
     const body = await readJson(req)
-    const amount = requireAmountText(body)
-    const receiver_wallet = requireWallet(body, 'receiver_wallet')
-    const request_id =
-      typeof body.request_id === 'string' && body.request_id.trim()
-        ? body.request_id.trim()
-        : crypto.randomUUID()
-    const chain =
-      typeof body.chain === 'string' && body.chain.trim() ? body.chain.trim() : 'polygon-amoy'
+    const parsed = validate(createOperationSchema, body)
+    const amount = parsed.amount
+    const receiver_wallet = parsed.receiver_wallet
+    const request_id = parsed.request_id ?? crypto.randomUUID()
+    const chain = parsed.chain
     // Brand rule: the sandbox token is MockUSDT. Never accept "USDT".
     const token_symbol = 'MOCKUSDT'
 

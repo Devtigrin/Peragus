@@ -1,5 +1,6 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit } from '../_shared/http.ts'
+import { validate, getOperationStatusSchema } from '../_shared/validation.ts'
 
 const COLUMNS =
   'id,user_id,status,chain,token_symbol,usdt_amount_text,wallet_address,pix_code,tx_hash,error_message,created_at,updated_at,request_id,sender_wallet,receiver_wallet,contract_address,block_number,gas_used,transaction_status'
@@ -12,8 +13,8 @@ Deno.serve(async (req) => {
   try {
     const { userId } = await authenticate(req, admin)
     rateLimit(userId)
-    const id = new URL(req.url).searchParams.get('id')
-    if (!id) return fail(new HttpError(400, 'id is required'))
+    const url = new URL(req.url)
+    const { id } = validate(getOperationStatusSchema, { id: url.searchParams.get('id') })
     const { data, error } = await admin
       .from('operations')
       .select(COLUMNS)

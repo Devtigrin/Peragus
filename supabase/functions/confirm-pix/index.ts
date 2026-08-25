@@ -1,6 +1,6 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit, readJson } from '../_shared/http.ts'
-import { requireString } from '../_shared/pix.ts'
+import { validate, confirmPixSchema } from '../_shared/validation.ts'
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const { userId } = await authenticate(req, admin)
     rateLimit(userId)
     const body = await readJson(req)
-    const operation_id = requireString(body, 'operation_id')
+    const { operation_id } = validate(confirmPixSchema, body)
 
     const { data: op, error } = await admin
       .from('operations')

@@ -1,5 +1,6 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit } from '../_shared/http.ts'
+import { validate, listOperationsSchema } from '../_shared/validation.ts'
 
 const COLUMNS =
   'id,status,chain,token_symbol,usdt_amount_text,receiver_wallet,sender_wallet,tx_hash,error_message,created_at,updated_at,pix_code'
@@ -13,9 +14,10 @@ Deno.serve(async (req) => {
     const { userId } = await authenticate(req, admin)
     rateLimit(userId)
     const url = new URL(req.url)
-    const limitRaw = Number(url.searchParams.get('limit') ?? '20')
-    const limit = Math.min(Math.max(Number.isFinite(limitRaw) ? limitRaw : 20, 1), 50)
-    const before = url.searchParams.get('before')
+    const { limit, before } = validate(listOperationsSchema, {
+      limit: url.searchParams.get('limit'),
+      before: url.searchParams.get('before'),
+    })
 
     let query = admin
       .from('operations')
