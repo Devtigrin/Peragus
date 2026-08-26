@@ -12,6 +12,7 @@ export const es: AuthContent = {
     emailLabel: 'Correo electrónico',
     passwordLabel: 'Contraseña',
     submit: 'Entrar',
+    forgotPassword: 'Olvidé mi contraseña',
     footer: '¿Aún no tienes cuenta?',
     footerLink: 'Crear cuenta',
     genericError: 'No fue posible entrar. Verifica el correo y la contraseña.',

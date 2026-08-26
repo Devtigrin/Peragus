@@ -6,6 +6,7 @@ export interface AuthContent {
     emailLabel: string
     passwordLabel: string
     submit: string
+    forgotPassword: string
     footer: string
     footerLink: string
     genericError: string

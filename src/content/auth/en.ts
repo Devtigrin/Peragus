@@ -12,6 +12,7 @@ export const en: AuthContent = {
     emailLabel: 'Email',
     passwordLabel: 'Password',
     submit: 'Sign in',
+    forgotPassword: 'Forgot my password',
     footer: "Don't have an account?",
     footerLink: 'Create account',
     genericError: 'Could not sign in. Check your email and password.',

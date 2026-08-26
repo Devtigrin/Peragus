@@ -75,6 +75,11 @@ export function Login({ locale }: { locale: Locale }) {
                   autoComplete="current-password"
                   className="mt-1.5"
                 />
+                <p className="mt-2 text-right text-sm">
+                  <Link className="underline underline-offset-4 text-tertiary" to={authPath(locale, 'recuperar-senha')}>
+                    {c.login.forgotPassword}
+                  </Link>
+                </p>
               </div>
             </div>
             <Button type="submit" disabled={busy} className="mt-6 w-full">
