@@ -5,20 +5,22 @@ interface CallOpts {
   body?: unknown
   query?: Record<string, string>
   apiKey?: string
+  /** Skip Bearer token for public endpoints (e.g. reset-password). */
+  public?: boolean
 }
 
 export async function callEdge<T>(name: string, opts: CallOpts = {}): Promise<T> {
   let token = opts.apiKey
-  if (!token) {
+  if (!token && !opts.public) {
     const { data } = await supabase.auth.getSession()
     token = data.session?.access_token
   }
-  if (!token) throw new Error('unauthenticated')
+  if (!token && !opts.public) throw new Error('unauthenticated')
   const qs = opts.query ? `?${new URLSearchParams(opts.query)}` : ''
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}${qs}`, {
     method: opts.method ?? 'GET',
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       apikey: (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ?? '',
       ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
     },

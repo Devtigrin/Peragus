@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthProvider'
+import { callEdge } from '@/lib/functions'
 import { authContent } from '@/content/auth'
 import { appPath, authPath, homePath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -33,8 +34,13 @@ export function Register({ locale }: { locale: Locale }) {
       setError(c.register.genericError)
       return
     }
-    if (data.session) navigate(appPath(locale))
-    else setSent(true)
+    if (data.session) {
+      callEdge('send-email', {
+        method: 'POST',
+        body: { to: String(fd.get('email')), template: 'welcome' },
+      }).catch(() => {})
+      navigate(appPath(locale))
+    } else setSent(true)
   }
 
   return (

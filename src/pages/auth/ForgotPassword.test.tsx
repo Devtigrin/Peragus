@@ -27,6 +27,7 @@ describe('ForgotPassword', () => {
     expect(callEdge).toHaveBeenCalledWith('reset-password', {
       method: 'POST',
       body: { email: 'a@b.dev' },
+      public: true,
     })
     expect(await screen.findByRole('note')).toHaveTextContent(
       'Se este e-mail estiver cadastrado',

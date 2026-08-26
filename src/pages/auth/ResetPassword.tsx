@@ -30,6 +30,7 @@ export function ResetPassword({ locale }: { locale: Locale }) {
       await callEdge<{ ok: boolean }>('confirm-reset-password', {
         method: 'POST',
         body: { token, password: pw },
+        public: true,
       })
       setDone(true)
     } catch {

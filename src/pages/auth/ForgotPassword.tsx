@@ -21,6 +21,7 @@ export function ForgotPassword({ locale }: { locale: Locale }) {
       await callEdge<{ ok: boolean }>('reset-password', {
         method: 'POST',
         body: { email },
+        public: true,
       })
     } catch {
       // Swallow errors: no account enumeration
