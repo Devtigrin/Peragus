@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '@/auth/AuthProvider'
+import { Link, useSearchParams } from 'react-router-dom'
+import { callEdge } from '@/lib/functions'
 import { authContent } from '@/content/auth'
 import { appPath, authPath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,8 @@ import { Notice } from '@/components/ui/notice'
 
 export function ResetPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
-  const { session, loading, updatePassword } = useAuth()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -25,28 +26,19 @@ export function ResetPassword({ locale }: { locale: Locale }) {
     }
     setBusy(true)
     setError(null)
-    const { error: err } = await updatePassword(pw)
-    setBusy(false)
-    if (err) {
+    try {
+      await callEdge<{ ok: boolean }>('confirm-reset-password', {
+        method: 'POST',
+        body: { token, password: pw },
+      })
+      setDone(true)
+    } catch {
       setError(c.reset.genericError)
-      return
     }
-    setDone(true)
+    setBusy(false)
   }
 
-  // The recovery link lands here with a hash the Supabase SDK absorbs into a
-  // session automatically. Until that happens we can only ask the user to wait.
-  if (loading) {
-    return (
-      <main id="main-content" tabIndex={-1} className="grid min-h-[70vh] place-items-center py-20">
-        <p className="text-sm text-secondary" role="status">
-          …
-        </p>
-      </main>
-    )
-  }
-
-  if (!session) {
+  if (!token) {
     return (
       <main id="main-content" tabIndex={-1} className="grid min-h-[70vh] place-items-center py-20">
         <div className="w-full max-w-md rounded-lg border border-line bg-surface p-8">

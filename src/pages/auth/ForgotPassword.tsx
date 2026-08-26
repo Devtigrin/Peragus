@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '@/auth/AuthProvider'
+import { callEdge } from '@/lib/functions'
 import { authContent } from '@/content/auth'
 import { authPath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -10,19 +10,23 @@ import { Notice } from '@/components/ui/notice'
 
 export function ForgotPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
-  const { sendReset } = useAuth()
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const email = String(new FormData(e.currentTarget).get('email'))
-    const origin = window.location.origin
-    const redirectTo = `${origin}${authPath(locale, 'resetar-senha')}`
     setBusy(true)
-    await sendReset(email, { redirectTo })
+    try {
+      await callEdge<{ ok: boolean }>('reset-password', {
+        method: 'POST',
+        body: { email },
+      })
+    } catch {
+      // Swallow errors: no account enumeration
+    }
     setBusy(false)
-    setSent(true) // always shown: no account enumeration
+    setSent(true)
   }
 
   return (

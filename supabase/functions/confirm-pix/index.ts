@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const { data: op, error } = await admin
       .from('operations')
-      .select('id, status, user_id, request_json')
+      .select('id, status, user_id, request_json, usdt_amount_text, receiver_wallet')
       .eq('id', operation_id)
       .eq('user_id', userId)
       .maybeSingle()
@@ -60,6 +60,45 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ operation_id }),
       }).catch(() => {}),
+    )
+
+    // Fire-and-forget email notification.
+    EdgeRuntime.waitUntil(
+      (async () => {
+        try {
+          const userRes = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${userId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+              },
+            },
+          )
+          if (!userRes.ok) return
+          const { email } = (await userRes.json()) as { email?: string }
+          if (!email) return
+
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
+            },
+            body: JSON.stringify({
+              to: email,
+              template: 'operation_confirmed',
+              params: {
+                operationId: op.id as string,
+                amount: op.usdt_amount_text as string,
+                receiverWallet: op.receiver_wallet as string,
+              },
+            }),
+          })
+        } catch {
+          // Fire-and-forget: never break settlement
+        }
+      })(),
     )
 
     return json({ ok: true, operation: confirmed })
