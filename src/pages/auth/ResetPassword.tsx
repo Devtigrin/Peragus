@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { callEdge } from '@/lib/functions'
+import { useAuth } from '@/auth/AuthProvider'
 import { authContent } from '@/content/auth'
 import { appPath, authPath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,8 @@ export function ResetPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
+  const { recovering, updatePassword, clearRecovery } = useAuth()
+  const viaRecoverySession = !token && recovering
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -27,11 +30,17 @@ export function ResetPassword({ locale }: { locale: Locale }) {
     setBusy(true)
     setError(null)
     try {
-      await callEdge<{ ok: boolean }>('confirm-reset-password', {
-        method: 'POST',
-        body: { token, password: pw },
-        public: true,
-      })
+      if (token) {
+        await callEdge<{ ok: boolean }>('confirm-reset-password', {
+          method: 'POST',
+          body: { token, password: pw },
+          public: true,
+        })
+      } else {
+        const { error } = await updatePassword(pw)
+        if (error) throw error
+        clearRecovery()
+      }
       setDone(true)
     } catch {
       setError(c.reset.genericError)
@@ -39,7 +48,7 @@ export function ResetPassword({ locale }: { locale: Locale }) {
     setBusy(false)
   }
 
-  if (!token) {
+  if (!token && !viaRecoverySession) {
     return (
       <main id="main-content" tabIndex={-1} className="grid min-h-[70vh] place-items-center py-20">
         <div className="w-full max-w-md rounded-lg border border-line bg-surface p-8">

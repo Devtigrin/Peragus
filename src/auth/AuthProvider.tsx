@@ -14,6 +14,8 @@ interface AuthState {
   ) => ReturnType<typeof supabase.auth.resetPasswordForEmail>
   updatePassword: (password: string) => ReturnType<typeof supabase.auth.updateUser>
   signOut: () => Promise<void>
+  recovering: boolean
+  clearRecovery: () => void
 }
 
 const Ctx = createContext<AuthState | null>(null)
@@ -21,13 +23,17 @@ const Ctx = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s)
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
+    })
     return () => sub.subscription.unsubscribe()
   }, [])
 
@@ -42,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
     await supabase.auth.signOut()
   },
+    recovering,
+    clearRecovery: () => setRecovering(false),
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
