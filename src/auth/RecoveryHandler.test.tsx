@@ -3,19 +3,15 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 let recovering = false
-const clearRecovery = vi.fn(() => {
-  recovering = false
-})
 vi.mock('@/auth/AuthProvider', () => ({
-  useAuth: () => ({ recovering, clearRecovery, session: null, user: null, loading: false }),
+  useAuth: () => ({ recovering, session: null, user: null, loading: false }),
 }))
 
 import { RecoveryHandler } from './RecoveryHandler'
 
-function renderWithHash(hash: string) {
-  window.location.hash = hash
+function renderWithPath(path: string) {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/" element={<p>home</p>} />
         <Route path="/resetar-senha" element={<p>reset-page</p>} />
@@ -28,23 +24,29 @@ function renderWithHash(hash: string) {
 describe('RecoveryHandler', () => {
   beforeEach(() => {
     recovering = false
-    clearRecovery.mockReset()
+    window.location.hash = ''
   })
 
   it('sends an expired recovery link to the reset page', async () => {
-    renderWithHash('#error=access_denied&error_code=otp_expired&error_description=x')
+    window.location.hash = '#error=access_denied&error_code=otp_expired&error_description=x'
+    renderWithPath('/')
     expect(await screen.findByText('reset-page')).toBeInTheDocument()
   })
 
-  it('opens the reset page when a recovery session arrives', async () => {
+  it('opens the reset page when a recovery session arrives without clearing the flag', async () => {
     recovering = true
-    renderWithHash('')
+    renderWithPath('/')
     expect(await screen.findByText('reset-page')).toBeInTheDocument()
-    expect(clearRecovery).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays on the reset page when the recovery session arrives on it', async () => {
+    recovering = true
+    renderWithPath('/resetar-senha')
+    expect(screen.getByText('reset-page')).toBeInTheDocument()
   })
 
   it('stays put when there is no recovery payload', () => {
-    renderWithHash('')
+    renderWithPath('/')
     expect(screen.getByText('home')).toBeInTheDocument()
   })
 })

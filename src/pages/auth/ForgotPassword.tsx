@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { callEdge } from '@/lib/functions'
+import { useAuth } from '@/auth/AuthProvider'
 import { authContent } from '@/content/auth'
 import { authPath, homePath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
@@ -11,21 +11,25 @@ import { AuthShell } from '@/components/auth/AuthShell'
 
 export function ForgotPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
+  const { sendReset } = useAuth()
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const email = String(new FormData(e.currentTarget).get('email'))
+    const redirectTo = `${window.location.origin}${authPath(locale, 'resetar-senha')}`
     setBusy(true)
     try {
-      await callEdge<{ ok: boolean }>('reset-password', {
-        method: 'POST',
-        body: { email },
-        public: true,
-      })
-    } catch {
-      // Swallow errors: no account enumeration
+      const { error } = await sendReset(email, { redirectTo })
+      if (error) throw error
+    } catch (err) {
+      // Always show the same neutral response (no account enumeration),
+      // but never leave the failure silent.
+      console.error(
+        '[peragus] password reset request failed',
+        err instanceof Error ? err.message : String(err),
+      )
     }
     setBusy(false)
     setSent(true)

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { callEdge } from '@/lib/functions'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthProvider'
 import { authContent } from '@/content/auth'
 import { appPath, authPath, homePath, type Locale } from '@/i18n/routing'
@@ -12,10 +11,7 @@ import { AuthShell } from '@/components/auth/AuthShell'
 
 export function ResetPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-  const { recovering, updatePassword, clearRecovery } = useAuth()
-  const viaRecoverySession = !token && recovering
+  const { recovering, loading, updatePassword, clearRecovery } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -31,17 +27,9 @@ export function ResetPassword({ locale }: { locale: Locale }) {
     setBusy(true)
     setError(null)
     try {
-      if (token) {
-        await callEdge<{ ok: boolean }>('confirm-reset-password', {
-          method: 'POST',
-          body: { token, password: pw },
-          public: true,
-        })
-      } else {
-        const { error } = await updatePassword(pw)
-        if (error) throw error
-        clearRecovery()
-      }
+      const { error } = await updatePassword(pw)
+      if (error) throw error
+      clearRecovery()
       setDone(true)
     } catch {
       setError(c.reset.genericError)
@@ -49,7 +37,30 @@ export function ResetPassword({ locale }: { locale: Locale }) {
     setBusy(false)
   }
 
-  if (!token && !viaRecoverySession) {
+  if (done) {
+    return (
+      <AuthShell title={c.reset.title} backToHome={c.backToHome} backToHomeHref={homePath(locale)}>
+        <Notice tone="info" className="mt-4">
+          {c.reset.successNotice}
+        </Notice>
+        <Button asChild className="mt-6 w-full">
+          <Link to={appPath(locale)}>{c.reset.goToApp}</Link>
+        </Button>
+      </AuthShell>
+    )
+  }
+
+  if (loading) {
+    return (
+      <AuthShell title={c.reset.title} backToHome={c.backToHome} backToHomeHref={homePath(locale)}>
+        <div className="mt-6 grid place-items-center text-sm text-secondary" role="status">
+          …
+        </div>
+      </AuthShell>
+    )
+  }
+
+  if (!recovering) {
     return (
       <AuthShell title={c.reset.title} backToHome={c.backToHome} backToHomeHref={homePath(locale)}>
         <Notice tone="sandbox" className="mt-4">
@@ -66,51 +77,40 @@ export function ResetPassword({ locale }: { locale: Locale }) {
 
   return (
     <AuthShell title={c.reset.title} backToHome={c.backToHome} backToHomeHref={homePath(locale)}>
-      {done ? (
-        <>
-          <Notice tone="info" className="mt-4">
-            {c.reset.successNotice}
+      <form onSubmit={onSubmit} aria-busy={busy} className="mt-6 space-y-4">
+        {error && (
+          <Notice tone="error" className="-mt-2">
+            {error}
           </Notice>
-          <Button asChild className="mt-6 w-full">
-            <Link to={appPath(locale)}>{c.reset.goToApp}</Link>
-          </Button>
-        </>
-      ) : (
-        <form onSubmit={onSubmit} aria-busy={busy} className="mt-6 space-y-4">
-          {error && (
-            <Notice tone="error" className="-mt-2">
-              {error}
-            </Notice>
-          )}
-          <div>
-            <Label htmlFor="password">{c.reset.passwordLabel}</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="mt-1.5"
-            />
-          </div>
-          <div>
-            <Label htmlFor="confirm">{c.reset.confirmLabel}</Label>
-            <Input
-              id="confirm"
-              name="confirm"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="mt-1.5"
-            />
-          </div>
-          <Button type="submit" disabled={busy} className="mt-2 w-full">
-            {c.reset.submit}
-          </Button>
-        </form>
-      )}
+        )}
+        <div>
+          <Label htmlFor="password">{c.reset.passwordLabel}</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="mt-1.5"
+          />
+        </div>
+        <div>
+          <Label htmlFor="confirm">{c.reset.confirmLabel}</Label>
+          <Input
+            id="confirm"
+            name="confirm"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="mt-1.5"
+          />
+        </div>
+        <Button type="submit" disabled={busy} className="mt-2 w-full">
+          {c.reset.submit}
+        </Button>
+      </form>
     </AuthShell>
   )
 }

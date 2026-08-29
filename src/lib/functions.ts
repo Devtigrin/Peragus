@@ -5,7 +5,7 @@ interface CallOpts {
   body?: unknown
   query?: Record<string, string>
   apiKey?: string
-  /** Skip Bearer token for public endpoints (e.g. reset-password). */
+  /** Skip Bearer token for unauthenticated public edge endpoints. */
   public?: boolean
 }
 

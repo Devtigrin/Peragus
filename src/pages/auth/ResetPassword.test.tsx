@@ -3,29 +3,25 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const callEdge = vi.fn()
-vi.mock('@/lib/functions', () => ({
-  callEdge: (...args: unknown[]) => callEdge(...args),
-}))
-
 const updatePassword = vi.fn()
 const clearRecovery = vi.fn()
 let recovering = false
+let loading = false
 vi.mock('@/auth/AuthProvider', () => ({
   useAuth: () => ({
     recovering,
+    loading,
     updatePassword,
     clearRecovery,
-    loading: false,
     user: null,
   }),
 }))
 
 import { ResetPassword } from './ResetPassword'
 
-function renderReset(initialEntries: string[]) {
+function renderReset() {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
+    <MemoryRouter initialEntries={['/resetar-senha']}>
       <ResetPassword locale="pt" />
     </MemoryRouter>,
   )
@@ -39,44 +35,48 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>) {
 
 describe('ResetPassword', () => {
   beforeEach(() => {
-    callEdge.mockReset()
     updatePassword.mockReset()
     clearRecovery.mockReset()
     recovering = false
+    loading = false
   })
 
-  it('sends password and token to the confirm edge function', async () => {
-    callEdge.mockResolvedValue({ ok: true })
-    const user = userEvent.setup()
-    renderReset(['/resetar-senha?token=abc123'])
-    await fillAndSubmit(user)
-    expect(callEdge).toHaveBeenCalledTimes(1)
-    expect(callEdge).toHaveBeenCalledWith('confirm-reset-password', {
-      method: 'POST',
-      body: { token: 'abc123', password: 'nova-senha-123' },
-      public: true,
-    })
-    expect(await screen.findByRole('note')).toHaveTextContent('Senha atualizada com sucesso.')
-  })
-
-  it('updates the password through the GoTrue recovery session without an edge call', async () => {
+  it('updates the password through the GoTrue recovery session and clears the flag', async () => {
     recovering = true
     updatePassword.mockResolvedValue({ data: { user: null }, error: null })
     const user = userEvent.setup()
-    renderReset(['/resetar-senha'])
+    renderReset()
     await fillAndSubmit(user)
-    expect(callEdge).not.toHaveBeenCalled()
     expect(updatePassword).toHaveBeenCalledTimes(1)
     expect(updatePassword).toHaveBeenCalledWith('nova-senha-123')
     expect(clearRecovery).toHaveBeenCalledTimes(1)
     expect(await screen.findByRole('note')).toHaveTextContent('Senha atualizada com sucesso.')
   })
 
-  it('shows the expired-link notice when there is no token and no recovery session', () => {
-    renderReset(['/resetar-senha'])
+  it('shows a generic error when the password update fails', async () => {
+    recovering = true
+    updatePassword.mockResolvedValue({ data: null, error: new Error('no session') })
+    const user = userEvent.setup()
+    renderReset()
+    await fillAndSubmit(user)
+    expect(updatePassword).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('note')).toHaveTextContent(
+      'Não foi possível atualizar a senha. Solicite um novo link.',
+    )
+  })
+
+  it('shows the expired-link notice when there is no recovery session', () => {
+    renderReset()
     expect(screen.getByRole('note')).toHaveTextContent(
       'Este link de recuperação não está mais válido. Solicite um novo link abaixo.',
     )
     expect(screen.queryByLabelText('Nova senha')).not.toBeInTheDocument()
+  })
+
+  it('waits for the session to initialize before judging the recovery state', () => {
+    loading = true
+    renderReset()
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 })

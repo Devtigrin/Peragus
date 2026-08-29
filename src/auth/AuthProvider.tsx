@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s)
       if (event === 'PASSWORD_RECOVERY') setRecovering(true)
+      if (event === 'SIGNED_OUT') setRecovering(false)
     })
     return () => sub.subscription.unsubscribe()
   }, [])
