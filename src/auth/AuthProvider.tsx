@@ -13,6 +13,7 @@ interface AuthState {
     options?: { redirectTo?: string },
   ) => ReturnType<typeof supabase.auth.resetPasswordForEmail>
   updatePassword: (password: string) => ReturnType<typeof supabase.auth.updateUser>
+  verifyRecoveryOtp: (tokenHash: string) => ReturnType<typeof supabase.auth.verifyOtp>
   signOut: () => Promise<void>
   recovering: boolean
   clearRecovery: () => void
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp: (email, password) => supabase.auth.signUp({ email, password }),
     sendReset: (email, options) => supabase.auth.resetPasswordForEmail(email, options),
     updatePassword: (password) => supabase.auth.updateUser({ password }),
+    verifyRecoveryOtp: (tokenHash) => supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }),
     signOut: async () => {
     await supabase.auth.signOut()
   },

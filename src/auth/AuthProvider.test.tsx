@@ -11,6 +11,7 @@ const { mockSupabase } = vi.hoisted(() => {
     signUp: vi.fn(),
     resetPasswordForEmail: vi.fn(),
     updateUser: vi.fn(),
+    verifyOtp: vi.fn(),
     signOut: vi.fn(),
   }
   return { mockSupabase: { auth } }
