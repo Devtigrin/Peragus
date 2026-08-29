@@ -47,7 +47,22 @@ export function ApiKeys({ locale }: { locale: Locale }) {
   }
 
   useEffect(() => {
-    void load()
+    let cancelled = false
+    supabase
+      .from('api_keys')
+      .select('id,name,key_prefix,created_at,last_used_at,revoked_at')
+      .order('created_at', { ascending: false })
+      .then(({ data, error: err }) => {
+        if (cancelled) return
+        if (err) {
+          setError(err.message)
+        } else {
+          setKeys(data as ApiKey[])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   async function onCreate(e: FormEvent) {
@@ -90,10 +105,10 @@ export function ApiKeys({ locale }: { locale: Locale }) {
           en: '/en/app/chaves-api',
         }}
       />
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{c.title}</h1>
-          <p className="mt-1 max-w-prose text-sm text-secondary">{c.description}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em] text-primary">{c.title}</h1>
+          <p className="mt-1.5 max-w-prose text-sm text-secondary">{c.description}</p>
         </div>
         <Button onClick={() => setFormOpen((v) => !v)}>{formOpen ? c.cancel : c.create}</Button>
       </div>
@@ -102,7 +117,7 @@ export function ApiKeys({ locale }: { locale: Locale }) {
         <form
           onSubmit={onCreate}
           aria-label={c.create}
-          className="mt-6 max-w-lg space-y-4 rounded-xl border border-line bg-surface p-5"
+          className="mt-6 max-w-lg space-y-4 rounded-(--radius-panel) border border-line bg-surface/60 p-5"
         >
           <div>
             <Label htmlFor="key-name">{c.nameLabel}</Label>
@@ -113,6 +128,7 @@ export function ApiKeys({ locale }: { locale: Locale }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="off"
+              className="mt-1.5"
             />
           </div>
           <Button type="submit" disabled={busy} className="w-full">
@@ -128,9 +144,9 @@ export function ApiKeys({ locale }: { locale: Locale }) {
       )}
 
       {freshKey && (
-        <div className="mt-6 max-w-xl rounded-xl border border-mint/40 bg-surface p-5">
+        <div className="mt-6 max-w-xl rounded-(--radius-panel) border border-mint/40 bg-surface p-5">
           <Notice tone="sandbox">{c.revealWarning}</Notice>
-          <code className="mt-3 block break-all rounded-lg bg-midnight p-3 font-mono text-xs text-mint">
+          <code className="mt-3 block break-all rounded-(--radius-control) border border-hairline bg-midnight p-3 font-mono text-xs text-mint">
             {freshKey}
           </code>
           <Button variant="secondary" size="sm" className="mt-3" onClick={() => setFreshKey(null)}>
@@ -140,20 +156,22 @@ export function ApiKeys({ locale }: { locale: Locale }) {
       )}
 
       {keys && keys.length === 0 && !error && (
-        <p className="mt-10 rounded-xl border border-line bg-surface p-8 text-center text-secondary">
-          {c.empty}{' '}
-          <a href={`/${locale === 'pt' ? '' : locale + '/'}docs`} className="underline underline-offset-4">
-            Docs
-          </a>{' '}
-          — {c.docsLink}
-        </p>
+        <div className="mt-8 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
+          <p className="mx-auto max-w-sm text-sm leading-6 text-secondary">
+            {c.empty}{' '}
+            <a href={`/${locale === 'pt' ? '' : locale + '/'}docs`} className="text-primary underline underline-offset-4">
+              Docs
+            </a>{' '}
+            — {c.docsLink}
+          </p>
+        </div>
       )}
 
       {keys && keys.length > 0 && (
-        <div className="mt-6 overflow-x-auto rounded-xl border border-line">
+        <div className="mt-6 overflow-x-auto rounded-(--radius-panel) border border-line">
           <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="bg-surface text-xs uppercase tracking-wide text-secondary">
-              <tr>
+            <thead className="font-mono text-[11px] uppercase tracking-[.1em] text-tertiary">
+              <tr className="border-b border-line">
                 {[c.headName, c.headPrefix, c.headCreated, c.headLastUsed, c.headActions].map((h) => (
                   <th key={h} scope="col" className="px-4 py-3 font-medium">
                     {h}
@@ -163,16 +181,16 @@ export function ApiKeys({ locale }: { locale: Locale }) {
             </thead>
             <tbody>
               {(keys ?? []).map((k) => (
-                <tr key={k.id} className="border-t border-line">
-                  <td className="px-4 py-3">{k.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs">{k.key_prefix}…</td>
-                  <td className="px-4 py-3 text-secondary">{formatDate(k.created_at, locale)}</td>
-                  <td className="px-4 py-3 text-secondary">
+                <tr key={k.id} className="border-b border-hairline last:border-b-0">
+                  <td className="px-4 py-3.5">{k.name}</td>
+                  <td className="px-4 py-3.5 font-mono text-xs">{k.key_prefix}…</td>
+                  <td className="px-4 py-3.5 text-secondary">{formatDate(k.created_at, locale)}</td>
+                  <td className="px-4 py-3.5 text-secondary">
                     {k.last_used_at ? formatDate(k.last_used_at, locale) : '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     {k.revoked_at ? (
-                      <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs uppercase text-tertiary">
+                      <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] uppercase tracking-[.08em] text-tertiary">
                         {c.revokedChip}
                       </span>
                     ) : confirmId === k.id ? (

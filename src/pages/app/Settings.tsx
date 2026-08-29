@@ -55,16 +55,16 @@ export function Settings({ locale }: { locale: Locale }) {
           en: '/en/app/configuracoes',
         }}
       />
-      <h1 className="text-2xl font-bold">{c.title}</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-[-0.02em] text-primary">{c.title}</h1>
 
-      <div className="mt-6 max-w-lg space-y-6">
-        <div className="rounded-xl border border-line bg-surface p-5">
+      <div className="mt-8 max-w-lg space-y-6">
+        <div className="rounded-(--radius-panel) border border-line bg-surface/60 p-5">
           <Label htmlFor="settings-email">{c.emailLabel}</Label>
-          <Input id="settings-email" value={user?.email ?? ''} readOnly className="mt-1" />
+          <Input id="settings-email" value={user?.email ?? ''} readOnly className="mt-1.5 font-mono" />
         </div>
 
-        <form onSubmit={onSubmit} aria-label={c.passwordTitle} className="space-y-4 rounded-xl border border-line bg-surface p-5">
-          <h2 className="font-semibold">{c.passwordTitle}</h2>
+        <form onSubmit={onSubmit} aria-label={c.passwordTitle} className="space-y-4 rounded-(--radius-panel) border border-line bg-surface/60 p-5">
+          <h2 className="font-display text-base font-semibold text-primary">{c.passwordTitle}</h2>
           <div>
             <Label htmlFor="settings-password">{c.newPasswordLabel}</Label>
             <Input
@@ -74,7 +74,7 @@ export function Settings({ locale }: { locale: Locale }) {
               required
               minLength={8}
               autoComplete="new-password"
-              className="mt-1"
+              className="mt-1.5"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ export function Settings({ locale }: { locale: Locale }) {
               required
               minLength={8}
               autoComplete="new-password"
-              className="mt-1"
+              className="mt-1.5"
             />
           </div>
           <Button type="submit" disabled={busy} className="w-full">

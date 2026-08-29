@@ -8,7 +8,7 @@ export function Surface({ className, elevation = 'base', ...props }: SurfaceProp
   return (
     <div
       className={cn(
-        'rounded-xl border border-line',
+        'rounded-(--radius-panel) border border-line',
         elevation === 'base' ? 'bg-surface' : 'bg-surface-raised',
         className,
       )}

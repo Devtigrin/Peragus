@@ -20,7 +20,9 @@ export interface AppContent {
     cancel: string
     empty: string
     emptyCta: string
+    loading: string
     loadError: string
+    loadErrorCta: string
     createError: string
     confirmPix: string
     pixCode: string

@@ -1,14 +1,28 @@
+import { cn } from '@/lib/utils'
 import type { HomeContent } from '@/content/home'
 
 export function InfrastructureDiagram({ nodes }: { nodes: HomeContent['infrastructure']['nodes'] }) {
   return (
-    <ol className="mt-12 grid gap-4 md:grid-cols-4">
-      {nodes.map((node, index) => (
-        <li key={node} className="relative rounded-lg border border-line bg-midnight p-5 font-mono text-sm text-secondary md:not-last:after:absolute md:not-last:after:-right-4 md:not-last:after:top-1/2 md:not-last:after:h-px md:not-last:after:w-4 md:not-last:after:bg-mint">
-          <span className="mb-3 block text-xs text-mint">0{index + 1}</span>
-          {node}
-        </li>
-      ))}
+    <ol className="mt-14 flex flex-col items-stretch gap-3 font-mono text-sm lg:flex-row lg:items-center lg:gap-4">
+      {nodes.map((node, index) => {
+        const last = index === nodes.length - 1
+        return (
+          <li key={node} className="flex items-center gap-4">
+            {index > 0 && (
+              <span aria-hidden="true" className="hidden text-xs text-mint lg:inline">→</span>
+            )}
+            <span
+              className={cn(
+                'flex items-center gap-2.5 rounded-(--radius-control) border border-line px-4 py-2.5 leading-none',
+                last && 'border-mint/50 bg-mint/5 text-mint',
+              )}
+            >
+              <span aria-hidden="true" className={cn('h-1.5 w-1.5 shrink-0 rounded-full', last ? 'bg-mint' : 'bg-mint/50')} />
+              {node}
+            </span>
+          </li>
+        )
+      })}
     </ol>
   )
 }

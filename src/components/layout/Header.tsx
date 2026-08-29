@@ -7,6 +7,7 @@ import { homePath, pagePath, sandboxPath, sectionPath } from '@/i18n/routing'
 import type { HomeContent } from '@/content/home'
 import { Button } from '@/components/ui/button'
 import { Container } from '@/components/ui/container'
+import { PeragusLogo } from '@/components/brand/PeragusLogo'
 import { LocaleSwitcher } from './LocaleSwitcher'
 
 const navigation = [
@@ -30,15 +31,15 @@ export function Header({ locale, content }: HeaderProps) {
   }))
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-midnight">
+    <header className="sticky top-0 z-50 border-b border-hairline bg-midnight/95 backdrop-blur-sm">
       <Container className="flex h-16 items-center justify-between gap-4">
-        <Link to={homePath(locale)} className="flex min-h-11 items-center gap-2 text-lg font-semibold text-primary">
-          Peragus
+        <Link to={homePath(locale)} className="flex min-h-11 items-center" aria-label="Peragus — Início">
+          <PeragusLogo />
         </Link>
 
-        <nav aria-label={content.nav.product} className="hidden items-center gap-6 lg:flex">
+        <nav aria-label={content.nav.product} className="hidden items-center gap-7 lg:flex">
           {navLinks.map((link) => (
-            <Link key={link.href} to={link.href} className="flex min-h-11 items-center text-sm text-secondary hover:text-primary transition-colors">
+            <Link key={link.href} to={link.href} className="text-sm text-secondary transition-colors hover:text-primary">
               {link.label}
             </Link>
           ))}
@@ -46,7 +47,7 @@ export function Header({ locale, content }: HeaderProps) {
 
         <div className="hidden items-center gap-3 lg:flex">
           <LocaleSwitcher locale={locale} />
-          <Link to={sandboxPath(locale, 'login')} className="flex min-h-11 items-center text-sm text-secondary hover:text-primary transition-colors">
+          <Link to={sandboxPath(locale, 'login')} className="flex min-h-11 items-center text-sm text-secondary transition-colors hover:text-primary">
             {content.nav.signIn}
           </Link>
           <Button asChild size="sm">
@@ -62,18 +63,18 @@ export function Header({ locale, content }: HeaderProps) {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 z-40 bg-midnight/80" />
-            <Dialog.Content aria-describedby={undefined} className="fixed inset-x-4 top-4 z-50 rounded-xl border border-line bg-surface p-5 shadow-panel lg:hidden">
+            <Dialog.Content aria-describedby={undefined} className="fixed inset-x-4 top-4 z-50 rounded-(--radius-panel) border border-line bg-surface p-5 shadow-panel lg:hidden">
               <Dialog.Title className="sr-only">{content.nav.product}</Dialog.Title>
               <Dialog.Close aria-label={content.nav.menuClose} className="ml-auto flex h-11 w-11 items-center justify-center">
                 <X aria-hidden="true" />
               </Dialog.Close>
-              <nav aria-label={content.nav.product} className="mt-6 grid gap-2">
+              <nav aria-label={content.nav.product} className="mt-4 grid gap-1 border-t border-hairline pt-4">
                 {navLinks.map((link) => (
-                  <Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center text-secondary">
+                  <Link key={link.href} to={link.href} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center rounded-(--radius-control) px-1 text-secondary transition-colors hover:text-primary">
                     {link.label}
                   </Link>
                 ))}
-                <Link to={sandboxPath(locale, 'login')} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center text-secondary">
+                <Link to={sandboxPath(locale, 'login')} onClick={() => setMobileOpen(false)} className="flex min-h-11 items-center rounded-(--radius-control) px-1 text-secondary transition-colors hover:text-primary">
                   {content.nav.signIn}
                 </Link>
                 <Button asChild className="mt-3">
@@ -81,7 +82,7 @@ export function Header({ locale, content }: HeaderProps) {
                     {content.nav.sandbox}
                   </Link>
                 </Button>
-                <div className="mt-4 border-t border-line pt-4">
+                <div className="mt-4 border-t border-hairline pt-4">
                   <LocaleSwitcher locale={locale} />
                 </div>
               </nav>

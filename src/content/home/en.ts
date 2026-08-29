@@ -13,7 +13,14 @@ export const enHome = {
     description: 'Validate, in a test environment, the flow between a simulated Pix payment and MockUSDT delivery to your wallet on Polygon Amoy.',
     primaryCta: 'Create sandbox account', secondaryCta: 'Understand the flow',
   },
-  eventPanel: { operation: 'OPERATION #PGS-2048', environment: 'TESTNET', simulated: 'simulated' },
+  eventPanel: {
+    operation: 'OPERATION #PGS-2048', environment: 'TESTNET', simulated: 'simulated',
+    reference: 'Reference', referenceValue: 'PGS-2048',
+    amount: 'Amount', amountValue: '25.000000 MOCKUSDT',
+    wallet: 'Wallet', walletValue: '0x71…9c', walletHint: 'your wallet',
+    trail: 'Trail', trailValue: 'payment.created → pix.confirmed → settlement.sent',
+    settlement: 'Test settlement', network: 'Polygon Amoy',
+  },
   transparency: [
     { title: 'Sandbox environment', body: 'No real funds are moved.' },
     { title: 'MockUSDT', body: 'A test token with no financial value.' },

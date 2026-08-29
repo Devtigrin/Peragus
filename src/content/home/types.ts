@@ -21,6 +21,17 @@ export type HomeContent = {
     operation: string
     environment: string
     simulated: string
+    reference: string
+    referenceValue: string
+    amount: string
+    amountValue: string
+    wallet: string
+    walletValue: string
+    walletHint: string
+    trail: string
+    trailValue: string
+    settlement: string
+    network: string
   }
   transparency: Array<{ title: string; body: string }>
   howItWorks: {

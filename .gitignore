@@ -40,3 +40,8 @@ dist-ssr
 # Playwright
 test-results/
 playwright-report/
+
+# Tooling artifacts
+.agents/
+skills-lock.json
+

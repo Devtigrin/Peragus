@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright'
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:4173'
 
-const PAGES = ['/', '/es', '/en', '/pt/docs', '/es/docs', '/en/docs', '/login', '/register']
+const PAGES = ['/', '/es', '/en', '/docs', '/es/docs', '/en/docs', '/login', '/register']
 
 for (const path of PAGES) {
   test(`sem violações axe em ${path}`, async ({ page }) => {

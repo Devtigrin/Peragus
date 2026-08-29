@@ -1,6 +1,10 @@
 import { docsContent } from '@/content/docs'
 import { docsPath, type Locale } from '@/i18n/routing'
 import { PageMetadata } from '@/components/seo/PageMetadata'
+import { Container } from '@/components/ui/container'
+
+const codeStyle =
+  'mt-3 overflow-x-auto rounded-(--radius-control) border border-hairline bg-midnight p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint'
 
 export function Docs({ locale }: { locale: Locale }) {
   const c = docsContent[locale]
@@ -15,12 +19,13 @@ export function Docs({ locale }: { locale: Locale }) {
         canonicalPath={canonical}
         alternates={{ pt: '/docs', es: '/es/docs', en: '/en/docs' }}
       />
-      <main id="main-content" tabIndex={-1} className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-8 lg:flex-row lg:px-6">
+      <main id="main-content" tabIndex={-1}>
+        <Container className="mt-10 flex max-w-7xl flex-col gap-10 pb-16 lg:flex-row lg:px-6">
         <nav
           aria-label={c.endpointsTitle}
           className="lg:w-56 lg:shrink-0 lg:sticky lg:top-24 lg:self-start"
         >
-          <ul className="flex flex-wrap gap-1 text-sm lg:flex-col">
+          <ul className="flex flex-wrap gap-1 border-b border-hairline pb-3 font-mono text-xs uppercase tracking-[.08em] text-tertiary lg:flex-col lg:border-b-0 lg:pb-0 lg:text-[13px] lg:normal-case lg:tracking-normal">
             {[
               { href: '#intro', label: c.intro.slice(0, 24) + '…' },
               { href: '#auth', label: c.authTitle },
@@ -30,7 +35,7 @@ export function Docs({ locale }: { locale: Locale }) {
               <li key={item.href}>
                 <a
                   href={item.href}
-                  className="block min-h-11 rounded-lg px-3 py-2.5 leading-tight text-secondary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
+                  className="block min-h-11 rounded-(--radius-control) px-2 py-2.5 leading-tight text-secondary transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
                 >
                   {item.label}
                 </a>
@@ -40,78 +45,72 @@ export function Docs({ locale }: { locale: Locale }) {
         </nav>
 
         <article className="min-w-0 max-w-none flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">{c.seo.title}</h1>
-          <section id="intro" className="mt-6">
-            <p className="max-w-prose text-secondary">{c.intro}</p>
+          <p className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[.14em] text-tertiary">
+            <span aria-hidden="true" className="h-px w-6 bg-mint/70" />
+            API Reference
+          </p>
+          <h1 className="mt-4 font-display text-[clamp(1.8rem,3.6vw,2.6rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-primary">
+            {c.seo.title}
+          </h1>
+          <section id="intro" className="mt-8">
+            <p className="max-w-prose leading-7 text-secondary">{c.intro}</p>
           </section>
 
-          <section id="auth" className="mt-10">
-            <h2 className="text-xl font-semibold">{c.authTitle}</h2>
-            <p className="mt-3 max-w-prose text-secondary">{c.authBody}</p>
+          <section id="auth" className="mt-12 scroll-mt-24">
+            <h2 className="font-display text-xl font-semibold text-primary">{c.authTitle}</h2>
+            <p className="mt-3 max-w-prose leading-7 text-secondary">{c.authBody}</p>
             <p className="mt-4 text-xs font-medium uppercase tracking-wide text-tertiary">
-              {c.baseUrlLabel}: <code>{c.endpoints[0].path.replace('/create-operation', '')}</code>
+              {c.baseUrlLabel}: <code className="font-mono">{c.endpoints[0].path.replace('/create-operation', '')}</code>
             </p>
-            <pre
-              tabIndex={0}
-              aria-label={c.baseUrlLabel}
-              className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
-            >
+            <pre tabIndex={0} aria-label={c.baseUrlLabel} className={codeStyle}>
               <code>{c.authExample}</code>
             </pre>
           </section>
 
-          <section id="endpoints" className="mt-10">
-            <h2 className="text-xl font-semibold">{c.endpointsTitle}</h2>
+          <section id="endpoints" className="mt-12 scroll-mt-24">
+            <h2 className="font-display text-xl font-semibold text-primary">{c.endpointsTitle}</h2>
             {c.endpoints.map((e) => (
               <div key={e.id} id={e.id} className="scroll-mt-24 pt-8">
-                <h3 className="text-lg font-semibold">
+                <h3 className="font-display text-lg font-semibold text-primary">
                   <span className="mr-2 rounded border border-line px-1.5 py-0.5 font-mono text-xs uppercase">
                     {e.method}
                   </span>
                   {e.title}
                 </h3>
-                <p className="mt-2 max-w-prose text-sm text-secondary">{e.description}</p>
-                <pre
-                  tabIndex={0}
-                  aria-label={`${e.title} — ${e.method}`}
-                  className="mt-3 overflow-x-auto rounded-lg bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
-                >
+                <p className="mt-2 max-w-prose text-sm leading-6 text-secondary">{e.description}</p>
+                <pre tabIndex={0} aria-label={`${e.title} — ${e.method}`} className={codeStyle}>
                   <code>
                     {`${e.method === 'POST' ? 'curl -X POST' : 'curl'} "${e.path}"`}
                     {'\n'}
                     {e.request.startsWith('(') ? '' : `  -H "content-type: application/json"\n  -d '${e.request}'`}
                   </code>
                 </pre>
-                <p className="mt-2 text-xs uppercase tracking-wide text-tertiary">200</p>
-                <pre
-                  tabIndex={0}
-                  aria-label={`${e.title} — response`}
-                  className="mt-1 overflow-x-auto rounded-lg border border-line bg-surface p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
-                >
+                <p className="mt-2 font-mono text-[11px] uppercase tracking-[.1em] text-tertiary">200</p>
+                <pre tabIndex={0} aria-label={`${e.title} — response`} className={codeStyle}>
                   <code>{e.response}</code>
                 </pre>
               </div>
             ))}
           </section>
 
-          <section id="errors" className="mt-12 scroll-mt-24">
-            <h2 className="text-xl font-semibold">{c.errorsTitle}</h2>
+          <section id="errors" className="mt-14 scroll-mt-24">
+            <h2 className="font-display text-xl font-semibold text-primary">{c.errorsTitle}</h2>
             <table className="mt-4 w-full text-left text-sm">
               <tbody>
                 {c.errors.map((err) => (
-                  <tr key={err.code} className="border-b border-line">
-                    <td className="py-2 pr-4 align-top font-mono text-xs whitespace-nowrap">
+                  <tr key={err.code} className="border-b border-hairline">
+                    <td className="py-2.5 pr-4 align-top font-mono text-xs whitespace-nowrap">
                       {err.code}
                     </td>
-                    <td className="py-2 text-secondary">{err.meaning}</td>
+                    <td className="py-2.5 text-secondary">{err.meaning}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </section>
 
-          <section className="mt-12">
-            <h2 className="text-xl font-semibold">{c.statusesTitle}</h2>
+          <section className="mt-14">
+            <h2 className="font-display text-xl font-semibold text-primary">{c.statusesTitle}</h2>
             <dl className="mt-4 space-y-2 text-sm">
               {Object.entries(c.statuses).map(([status, meaning]) => (
                 <div key={status} className="flex gap-3">
@@ -138,7 +137,8 @@ export function Docs({ locale }: { locale: Locale }) {
               </a>
             </p>
           </section>
-        </article>
+</article>
+        </Container>
       </main>
     </>
   )

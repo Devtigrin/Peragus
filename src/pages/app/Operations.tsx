@@ -9,6 +9,7 @@ import { Notice } from '@/components/ui/notice'
 import { PageMetadata } from '@/components/seo/PageMetadata'
 import { StatusBadge } from '@/components/app/StatusBadge'
 import { CopyField } from '@/components/app/CopyField'
+import { cn } from '@/lib/utils'
 import type { Operation } from '@/types/operation'
 import { ACTIVE_STATUSES } from '@/types/operation'
 
@@ -23,6 +24,15 @@ function formatDate(iso: string, locale: Locale) {
   const tag = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-419' : 'en-US'
   return new Intl.DateTimeFormat(tag, { dateStyle: 'short', timeStyle: 'short' }).format(
     new Date(iso),
+  )
+}
+
+function LedgerRow({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-t border-hairline pt-2.5">
+      <dt className="font-mono text-[11px] uppercase tracking-[.08em] text-tertiary">{label}</dt>
+      <dd className={cn('min-w-0 truncate text-xs text-secondary', mono && 'font-mono')}>{value}</dd>
+    </div>
   )
 }
 
@@ -50,8 +60,20 @@ export function Operations({ locale }: { locale: Locale }) {
   }, [])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let cancelled = false
+    callEdge<Operation[]>('list-operations')
+      .then((data) => {
+        if (cancelled) return
+        setOperations(data)
+        setLoadError(false)
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!operations?.some((op) => ACTIVE.includes(op.status))) {
@@ -109,10 +131,10 @@ export function Operations({ locale }: { locale: Locale }) {
         canonicalPath={locale === 'pt' ? '/app' : `/${locale}/app`}
         alternates={{ pt: '/app', es: '/es/app', en: '/en/app' }}
       />
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{c.title}</h1>
-          <p className="mt-1 max-w-prose text-sm text-secondary">{c.description}</p>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em] text-primary">{c.title}</h1>
+          <p className="mt-1.5 max-w-prose text-sm text-secondary">{c.description}</p>
         </div>
         <Button onClick={() => setFormOpen((v) => !v)}>
           {formOpen ? c.cancel : c.newOperation}
@@ -122,7 +144,7 @@ export function Operations({ locale }: { locale: Locale }) {
       {formOpen && (
         <form
           onSubmit={onSubmit}
-          className="mt-6 max-w-lg space-y-4 rounded-xl border border-line bg-surface p-5"
+          className="mt-6 max-w-lg space-y-4 rounded-(--radius-panel) border border-line bg-surface/60 p-5"
           aria-label={c.newOperation}
         >
           <div>
@@ -135,6 +157,7 @@ export function Operations({ locale }: { locale: Locale }) {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="25.00"
               autoComplete="off"
+              className="mt-1.5"
             />
           </div>
           <div>
@@ -147,8 +170,9 @@ export function Operations({ locale }: { locale: Locale }) {
               placeholder="0x…"
               autoComplete="off"
               spellCheck={false}
+              className="mt-1.5 font-mono"
             />
-            <p className="mt-1 text-xs text-tertiary">{c.requestIdHint}</p>
+            <p className="mt-1.5 text-xs leading-5 text-tertiary">{c.requestIdHint}</p>
           </div>
           <Button type="submit" disabled={creating} className="w-full">
             {c.submit}
@@ -162,75 +186,91 @@ export function Operations({ locale }: { locale: Locale }) {
       )}
 
       {loadError && (
-        <div className="mt-6">
+        <div className="mt-6 flex max-w-lg flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Notice tone="error">{c.loadError}</Notice>
+          <Button variant="secondary" size="sm" onClick={() => void load()} className="shrink-0">
+            {c.loadErrorCta}
+          </Button>
+        </div>
+      )}
+
+      {operations === null && !loadError && (
+        <div aria-hidden="true" className="mt-8 overflow-hidden rounded-(--radius-panel) border border-hairline">
+          <p className="sr-only">{c.loading}</p>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse border-b border-hairline p-5 last:border-b-0">
+              <div className="h-4 w-40 rounded bg-surface-raised/60" />
+              <div className="mt-4 space-y-2.5">
+                <div className="h-3 w-full rounded bg-surface" />
+                <div className="h-3 w-2/3 rounded bg-surface" />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {operations && operations.length === 0 && (
-        <div className="mt-10 rounded-xl border border-line bg-surface p-8 text-center">
-          <p className="text-secondary">{c.empty}</p>
-          <Button className="mt-4" variant="secondary" onClick={() => setFormOpen(true)}>
+        <div className="mt-8 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
+          <p className="mx-auto max-w-sm text-sm leading-6 text-secondary">{c.empty}</p>
+          <Button className="mt-5" variant="secondary" onClick={() => setFormOpen(true)}>
             {c.emptyCta}
           </Button>
         </div>
       )}
 
-      <ul className="mt-6 space-y-4">
-        {(operations ?? []).map((op) => (
-          <li key={op.id} className="rounded-xl border border-line bg-surface p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="font-mono text-sm font-semibold">{formatAmount(op)}</span>
-              <StatusBadge status={op.status} locale={locale} />
-            </div>
-            <dl className="mt-3 grid gap-x-6 gap-y-1 text-xs text-secondary sm:grid-cols-2">
-              <div className="flex justify-between gap-2 sm:block">
-                <dt className="text-tertiary">{appContent[locale].operations.tableHeadCreated}</dt>
-                <dd>{formatDate(op.created_at, locale)}</dd>
+      {operations && operations.length > 0 && (
+        <ul className="mt-8 overflow-hidden rounded-(--radius-panel) border border-line">
+          {(operations ?? []).map((op) => (
+            <li key={op.id} className="border-b border-hairline p-5 last:border-b-0 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="font-mono text-sm font-semibold text-primary">{formatAmount(op)}</span>
+                <StatusBadge status={op.status} locale={locale} />
               </div>
-              <div className="flex justify-between gap-2 sm:block">
-                <dt className="text-tertiary">{c.receiverWallet}</dt>
-                <dd className="truncate font-mono">{op.receiver_wallet}</dd>
-              </div>
-            </dl>
 
-            {ACTIVE.includes(op.status) && op.status !== 'created' && (
-              <p className="mt-3 text-xs text-sky-300" role="status">
-                {c.pollingNote}
-              </p>
-            )}
+              <dl className="mt-4 grid gap-x-8 gap-y-2.5">
+                <LedgerRow label={appContent[locale].operations.tableHeadCreated} value={formatDate(op.created_at, locale)} mono={false} />
+                <LedgerRow label={c.receiverWallet} value={op.receiver_wallet ?? '—'} />
+              </dl>
 
-            {op.pix_code && op.status === 'created' && (
-              <div className="mt-4 space-y-3">
-                <CopyField value={op.pix_code} label={c.pixCode} copyLabel={c.copy} copiedLabel={c.copied} />
-                <Button variant="primary" size="sm" onClick={() => confirmPix(op.id)}>
-                  {c.confirmPix}
-                </Button>
-              </div>
-            )}
+              {ACTIVE.includes(op.status) && op.status !== 'created' && (
+                <p className="mt-3 flex items-center gap-2 text-xs text-data" role="status">
+                  <span aria-hidden="true" className="h-1 w-1 rounded-full bg-data" />
+                  {c.pollingNote}
+                </p>
+              )}
 
-            {op.tx_hash && (
-              <div className="mt-4 space-y-1">
-                <CopyField value={op.tx_hash} label={c.txHash} copyLabel={c.copy} copiedLabel={c.copied} />
-                <a
-                  href={`https://amoy.polygonscan.com/tx/${op.tx_hash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block min-h-11 py-2.5 text-xs text-mint underline underline-offset-4"
-                >
-                  {c.explorerLink}
-                </a>
-              </div>
-            )}
+              {op.pix_code && op.status === 'created' && (
+                <div className="mt-4 grid gap-3">
+                  <CopyField value={op.pix_code} label={c.pixCode} copyLabel={c.copy} copiedLabel={c.copied} />
+                  <Button variant="primary" size="sm" className="justify-self-start" onClick={() => confirmPix(op.id)}>
+                    {c.confirmPix}
+                  </Button>
+                </div>
+              )}
 
-            {op.error_message && (
-              <p className="mt-3 text-xs text-error" role="alert">
-                {c.errorDetail}: {op.error_message}
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+              {op.tx_hash && (
+                <div className="mt-4 grid gap-3">
+                  <CopyField value={op.tx_hash} label={c.txHash} copyLabel={c.copy} copiedLabel={c.copied} />
+                  <a
+                    href={`https://amoy.polygonscan.com/tx/${op.tx_hash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-11 items-center py-2.5 font-mono text-xs text-mint underline underline-offset-4"
+                  >
+                    {c.explorerLink}
+                  </a>
+                </div>
+              )}
+
+              {op.error_message && (
+                <p className="mt-3 font-mono text-xs text-error" role="alert">
+                  {c.errorDetail}: {op.error_message}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   )
 }

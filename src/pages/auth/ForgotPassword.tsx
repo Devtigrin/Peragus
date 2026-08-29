@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { callEdge } from '@/lib/functions'
 import { authContent } from '@/content/auth'
-import { authPath, type Locale } from '@/i18n/routing'
+import { authPath, homePath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Notice } from '@/components/ui/notice'
+import { AuthShell } from '@/components/auth/AuthShell'
 
 export function ForgotPassword({ locale }: { locale: Locale }) {
   const c = authContent[locale]
@@ -31,46 +32,34 @@ export function ForgotPassword({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main id="main-content" tabIndex={-1} className="grid min-h-[70vh] place-items-center py-20">
-      <div className="w-full max-w-md">
-        <div className="rounded-lg border border-line bg-surface p-8">
-          <h1 className="text-2xl font-semibold tracking-tight">{c.forgot.title}</h1>
-          {sent ? (
-            <>
-              <Notice tone="info" className="mt-4">
-                {c.forgot.sentNotice}
-              </Notice>
-              <p className="mt-6 text-center text-sm">
-                <Link className="underline underline-offset-4" to={authPath(locale, 'login')}>
-                  {c.forgot.backToLogin}
-                </Link>
-              </p>
-            </>
-          ) : (
-            <form onSubmit={onSubmit} aria-busy={busy}>
-              <div className="mt-6">
-                <Label htmlFor="email">{c.forgot.emailLabel}</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  className="mt-1.5"
-                />
-              </div>
-              <Button type="submit" disabled={busy} className="mt-6 w-full">
-                {c.forgot.submit}
-              </Button>
-              <p className="mt-6 text-center text-sm">
-                <Link className="underline underline-offset-4" to={authPath(locale, 'login')}>
-                  {c.forgot.backToLogin}
-                </Link>
-              </p>
-            </form>
-          )}
-        </div>
-      </div>
-    </main>
+    <AuthShell title={c.forgot.title} backToHome={c.backToHome} backToHomeHref={homePath(locale)}>
+      {sent ? (
+        <>
+          <Notice tone="info" className="mt-4">
+            {c.forgot.sentNotice}
+          </Notice>
+          <p className="mt-6 text-center text-sm">
+            <Link className="text-primary underline underline-offset-4" to={authPath(locale, 'login')}>
+              {c.forgot.backToLogin}
+            </Link>
+          </p>
+        </>
+      ) : (
+        <form onSubmit={onSubmit} aria-busy={busy} className="mt-6">
+          <div>
+            <Label htmlFor="email">{c.forgot.emailLabel}</Label>
+            <Input id="email" name="email" type="email" required autoComplete="email" className="mt-1.5" />
+          </div>
+          <Button type="submit" disabled={busy} className="mt-6 w-full">
+            {c.forgot.submit}
+          </Button>
+          <p className="mt-6 text-center text-sm">
+            <Link className="text-tertiary underline underline-offset-4 hover:text-primary" to={authPath(locale, 'login')}>
+              {c.forgot.backToLogin}
+            </Link>
+          </p>
+        </form>
+      )}
+    </AuthShell>
   )
 }
