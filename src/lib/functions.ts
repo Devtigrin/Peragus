@@ -16,6 +16,15 @@ export async function callEdge<T>(name: string, opts: CallOpts = {}): Promise<T>
     token = data.session?.access_token
   }
   if (!token && !opts.public) throw new Error('unauthenticated')
+  // Um request com body nunca pode usar GET/HEAD: o browser rejeitara com
+  // "Request with GET/HEAD method cannot have body". Falha cedo e explicito
+  // em vez de deixar o contrato invalido passar silenciosamente.
+  if (opts.body !== undefined) {
+    const method = (opts.method ?? 'GET').toUpperCase()
+    if (method === 'GET' || method === 'HEAD') {
+      throw new Error(`callEdge('${name}') recebeu body mas usa método ${method}; use POST`)
+    }
+  }
   const qs = opts.query ? `?${new URLSearchParams(opts.query)}` : ''
   const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}${qs}`, {
     method: opts.method ?? 'GET',

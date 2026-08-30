@@ -16,14 +16,18 @@ export interface AppContent {
     amountLabel: string
     receiverWalletLabel: string
     requestIdHint: string
+    requestIdLabel: string
     submit: string
+    creating: string
     cancel: string
+    createError: string
+    createErrorInvalidAmount: string
+    createErrorInvalidWallet: string
     empty: string
     emptyCta: string
     loading: string
     loadError: string
     loadErrorCta: string
-    createError: string
     confirmPix: string
     pixCode: string
     txHash: string

@@ -12,6 +12,7 @@ import { CopyField } from '@/components/app/CopyField'
 import { cn } from '@/lib/utils'
 import type { Operation } from '@/types/operation'
 import { ACTIVE_STATUSES } from '@/types/operation'
+import { validateAmount, validateEvmWallet } from '@/lib/operationValidation'
 
 const POLL_MS = 3000
 const ACTIVE = ACTIVE_STATUSES
@@ -45,6 +46,9 @@ export function Operations({ locale }: { locale: Locale }) {
   const [amount, setAmount] = useState('')
   const [wallet, setWallet] = useState('')
   const [createError, setCreateError] = useState('')
+  // Idempotencia: request_id e gerado uma vez quando o formulario e aberto e
+  // reutilizado em qualquer retry da MESMA tentativa, para o backend deduplicar.
+  const [requestId, setRequestId] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const load = useCallback(async () => {
@@ -92,21 +96,39 @@ export function Operations({ locale }: { locale: Locale }) {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
+    // Double-submit: ignora novos cliques enquanto uma criacao esta em andamento.
+    if (creating) return
+    if (!validateAmount(amount)) {
+      setCreateError(c.createErrorInvalidAmount)
+      return
+    }
+    if (!validateEvmWallet(wallet)) {
+      setCreateError(c.createErrorInvalidWallet)
+      return
+    }
     setCreateError('')
     setCreating(true)
+    // Reutiliza o request_id da tentativa em andamento; se nao houver, gera um
+    // novo. Isso preserva a idempotencia em retry da MESMA tentativa.
+    const idempotencyKey = requestId ?? crypto.randomUUID()
+    if (!requestId) setRequestId(idempotencyKey)
     try {
       await callEdge('create-operation', {
+        method: 'POST',
         body: {
-          amount: amount.replace(',', '.'),
-          receiver_wallet: wallet,
-          token_symbol: 'MockUSDT',
+          amount: amount.trim().replace(',', '.'),
+          receiver_wallet: wallet.trim(),
+          request_id: idempotencyKey,
         },
       })
       await load()
       setFormOpen(false)
       setAmount('')
       setWallet('')
+      setRequestId(null)
     } catch (err) {
+      // Mantem o request_id: um retry/re-submit da mesma tentativa nao deve
+      // duplicar a operacao no backend.
       setCreateError(err instanceof Error ? err.message : c.createError)
     } finally {
       setCreating(false)
@@ -120,6 +142,21 @@ export function Operations({ locale }: { locale: Locale }) {
     } catch {
       await load()
     }
+  }
+
+  function openForm() {
+    setCreateError('')
+    setFormOpen(true)
+    setRequestId(crypto.randomUUID())
+  }
+
+  function closeForm() {
+    if (creating) return
+    setFormOpen(false)
+    setCreateError('')
+    setAmount('')
+    setWallet('')
+    setRequestId(null)
   }
 
   return (
@@ -136,7 +173,7 @@ export function Operations({ locale }: { locale: Locale }) {
           <h1 className="font-display text-2xl font-semibold tracking-[-0.02em] text-primary">{c.title}</h1>
           <p className="mt-1.5 max-w-prose text-sm text-secondary">{c.description}</p>
         </div>
-        <Button onClick={() => setFormOpen((v) => !v)}>
+        <Button onClick={formOpen ? closeForm : openForm}>
           {formOpen ? c.cancel : c.newOperation}
         </Button>
       </div>
@@ -174,8 +211,16 @@ export function Operations({ locale }: { locale: Locale }) {
             />
             <p className="mt-1.5 text-xs leading-5 text-tertiary">{c.requestIdHint}</p>
           </div>
+          {requestId && (
+            <div className="rounded-(--radius-control) border border-hairline bg-midnight/40 px-3 py-2.5">
+              <dt className="font-mono text-[11px] uppercase tracking-[.08em] text-tertiary">
+                {c.requestIdLabel}
+              </dt>
+              <dd className="mt-1 font-mono text-xs text-secondary">{requestId}</dd>
+            </div>
+          )}
           <Button type="submit" disabled={creating} className="w-full">
-            {c.submit}
+            {creating ? c.creating : c.submit}
           </Button>
         </form>
       )}
@@ -212,7 +257,7 @@ export function Operations({ locale }: { locale: Locale }) {
       {operations && operations.length === 0 && (
         <div className="mt-8 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
           <p className="mx-auto max-w-sm text-sm leading-6 text-secondary">{c.empty}</p>
-          <Button className="mt-5" variant="secondary" onClick={() => setFormOpen(true)}>
+          <Button className="mt-5" variant="secondary" onClick={openForm}>
             {c.emptyCta}
           </Button>
         </div>

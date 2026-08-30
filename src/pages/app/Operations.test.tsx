@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { Operations } from './Operations'
 import type { Operation } from '@/types/operation'
@@ -71,5 +71,147 @@ describe('Operations page', () => {
     expect(await screen.findByText('Confirmed')).toBeInTheDocument()
     const link = await screen.findByRole('link', { name: /PolygonScan Amoy/ })
     expect(link).toHaveAttribute('href', 'https://amoy.polygonscan.com/tx/0xdead')
+  })
+
+  function openAndFillForm() {
+    fireEvent.click(screen.getByRole('button', { name: 'Nova operação' }))
+    fireEvent.change(screen.getByLabelText('Valor em MockUSDT'), { target: { value: '25' } })
+    fireEvent.change(screen.getByLabelText('Carteira de destino (EVM)'), {
+      target: { value: '0x0123456789abcdef0123456789abcdef01234567' },
+    })
+  }
+
+  interface CreateCall {
+    name: string
+    opts: NonNullable<Parameters<typeof callEdge>[1]>
+  }
+
+  function createCalls(): CreateCall[] {
+    return mockCall.mock.calls.flatMap(([name, opts]) =>
+      name === 'create-operation' && opts !== undefined ? [{ name, opts }] : [],
+    )
+  }
+
+  function submitButton() {
+    const form = screen.getByRole('form', { name: 'Nova operação' })
+    return within(form).getByRole('button', { name: 'Criar operação' })
+  }
+
+  it('cria operacao via POST com request_id de idempotencia', async () => {
+    mockCall.mockResolvedValue({ operations: [] })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    await screen.findByText(/Nenhuma operação ainda/)
+    openAndFillForm()
+    fireEvent.click(submitButton())
+    await waitFor(() => {
+      const calls = createCalls()
+      expect(calls).toHaveLength(1)
+    })
+    const { name, opts } = createCalls()[0]
+    expect(name).toBe('create-operation')
+    expect(opts.method).toBe('POST')
+    expect(opts.body).toEqual(
+      expect.objectContaining({
+        amount: '25',
+        receiver_wallet: '0x0123456789abcdef0123456789abcdef01234567',
+        request_id: expect.any(String),
+      }),
+    )
+  })
+
+  it('bloqueia criacao com carteira invalida sem chamar o backend', async () => {
+    mockCall.mockResolvedValue({ operations: [] })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    await screen.findByText(/Nenhuma operação ainda/)
+    fireEvent.click(screen.getByRole('button', { name: 'Nova operação' }))
+    fireEvent.change(screen.getByLabelText('Valor em MockUSDT'), { target: { value: '25' } })
+    fireEvent.change(screen.getByLabelText('Carteira de destino (EVM)'), {
+      target: { value: '0xabc-not-valid' },
+    })
+    fireEvent.click(submitButton())
+    expect(await screen.findByText(/Carteira inválida/)).toBeInTheDocument()
+    expect(createCalls()).toHaveLength(0)
+  })
+
+  it('bloqueia criacao com valor invalido sem chamar o backend', async () => {
+    mockCall.mockResolvedValue({ operations: [] })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    await screen.findByText(/Nenhuma operação ainda/)
+    fireEvent.click(screen.getByRole('button', { name: 'Nova operação' }))
+    fireEvent.change(screen.getByLabelText('Valor em MockUSDT'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Carteira de destino (EVM)'), {
+      target: { value: '0x0123456789abcdef0123456789abcdef01234567' },
+    })
+    fireEvent.click(submitButton())
+    expect(await screen.findByText(/maior que zero/)).toBeInTheDocument()
+    expect(createCalls()).toHaveLength(0)
+  })
+
+  it('desabilita o botao durante a criacao e nao dispara request duplicado', async () => {
+    mockCall.mockResolvedValue({ operations: [] })
+    let resolveGate: ((v: unknown) => void) | undefined
+    const gate = new Promise((r) => {
+      resolveGate = r
+    })
+    mockCall.mockImplementation((name: unknown) => {
+      if (name === 'create-operation') return gate
+      return Promise.resolve({ operations: [] })
+    })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    await screen.findByText(/Nenhuma operação ainda/)
+    openAndFillForm()
+    const createBtn = submitButton()
+    fireEvent.click(createBtn)
+    await waitFor(() => expect(createBtn).toBeDisabled())
+    fireEvent.click(createBtn)
+    expect(createCalls()).toHaveLength(1)
+    resolveGate?.({ ok: true })
+    await waitFor(() => expect(createCalls()).toHaveLength(1))
+  })
+
+  it('reutiliza o mesmo request_id em retry da mesma tentativa apos erro', async () => {
+    mockCall.mockResolvedValue({ operations: [] })
+    let shouldFail = true
+    mockCall.mockImplementation((name: unknown) => {
+      if (name === 'create-operation') {
+        if (shouldFail) {
+          shouldFail = false
+          return Promise.reject(new Error('backend down'))
+        }
+        return Promise.resolve({ ok: true })
+      }
+      return Promise.resolve({ operations: [] })
+    })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    await screen.findByText(/Nenhuma operação ainda/)
+    openAndFillForm()
+    const createBtn = submitButton()
+    fireEvent.click(createBtn)
+    expect(await screen.findByText('backend down')).toBeInTheDocument()
+    fireEvent.click(createBtn)
+    await waitFor(() => expect(createCalls()).toHaveLength(2))
+    const [first, second] = createCalls()
+    expect(first.opts.body).toEqual(expect.objectContaining({ request_id: expect.any(String) }))
+    expect(second.opts.body).toEqual(first.opts.body)
   })
 })
