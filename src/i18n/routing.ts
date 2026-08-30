@@ -26,7 +26,7 @@ export function sectionPath(locale: Locale, id: string): string {
   return `${homePath(locale)}#${id}`
 }
 
-export type AppSlug = 'chaves-api' | 'configuracoes'
+export type AppSlug = 'chaves-api' | 'configuracoes' | 'docs'
 export type AuthSlug = 'login' | 'register' | 'recuperar-senha' | 'resetar-senha'
 
 export function authPath(locale: Locale, slug: AuthSlug): string {
@@ -39,6 +39,10 @@ export function appPath(locale: Locale, slug?: AppSlug): string {
 
 export function docsPath(locale: Locale): string {
   return `${PREFIX[locale]}/docs`
+}
+
+export function appDocsPath(locale: Locale): string {
+  return `${PREFIX[locale]}/app/docs`
 }
 
 export function localeFromPathname(pathname: string): Locale {

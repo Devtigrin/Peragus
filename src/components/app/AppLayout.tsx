@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthProvider'
 import { appContent } from '@/content/app'
-import { appPath, docsPath, homePath, type Locale } from '@/i18n/routing'
+import { appPath, homePath, type Locale } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PeragusLogo } from '@/components/brand/PeragusLogo'
@@ -42,7 +42,7 @@ export function AppLayout({ locale }: { locale: Locale }) {
             <NavLink to={appPath(locale, 'chaves-api')} className={linkCls}>
               {c.navApiKeys}
             </NavLink>
-            <NavLink to={docsPath(locale)} className={linkCls}>
+            <NavLink to={appPath(locale, 'docs')} className={linkCls}>
               Docs
             </NavLink>
             <NavLink to={appPath(locale, 'configuracoes')} className={linkCls}>

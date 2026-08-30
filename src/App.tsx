@@ -14,6 +14,7 @@ import { AppLayout } from '@/components/app/AppLayout'
 import { Operations } from '@/pages/app/Operations'
 import { ApiKeys } from '@/pages/app/ApiKeys'
 import { Settings } from '@/pages/app/Settings'
+import { AppDocs } from '@/pages/app/AppDocs'
 import { LOCALES, appPath, homePath, localeFromPathname } from '@/i18n/routing'
 
 function LocalizedNotFound() {
@@ -51,6 +52,7 @@ export default function App() {
         >
           <Route index element={<Operations locale={locale} />} />
           <Route path="chaves-api" element={<ApiKeys locale={locale} />} />
+          <Route path="docs" element={<AppDocs locale={locale} />} />
           <Route path="configuracoes" element={<Settings locale={locale} />} />
         </Route>
       ))}
