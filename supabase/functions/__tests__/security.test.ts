@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validate, createOperationSchema, confirmPixSchema, getOperationStatusSchema, listOperationsSchema } from '../_shared/validation.ts'
+import { validate, createOperationSchema, confirmPixSchema, getOperationStatusSchema, listOperationsSchema, settleOperationSchema } from '../_shared/validation.ts'
 
 describe('Validation - createOperationSchema', () => {
   const validWallet = '0x' + 'a'.repeat(40)
@@ -74,5 +74,14 @@ describe('Validation - listOperationsSchema', () => {
 
   it('rejects limit < 1', () => {
     expect(() => validate(listOperationsSchema, { limit: 0 })).toThrow()
+  })
+})
+
+describe('Validation - settleOperationSchema', () => {
+  it('accepts only a UUID operation_id', () => {
+    expect(validate(settleOperationSchema, {
+      operation_id: '550e8400-e29b-41d4-a716-446655440000',
+    })).toEqual({ operation_id: '550e8400-e29b-41d4-a716-446655440000' })
+    expect(() => validate(settleOperationSchema, { operation_id: 'bad' })).toThrow()
   })
 })

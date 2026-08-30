@@ -33,6 +33,8 @@ export const listOperationsSchema = z.object({
   before: z.string().optional(),
 })
 
+export const settleOperationSchema = z.object({ operation_id: uuidSchema })
+
 export function validate<T extends z.ZodType>(
   schema: T,
   data: unknown,

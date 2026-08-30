@@ -1,8 +1,58 @@
 import { authenticate, adminClient } from '../_shared/auth.ts'
 import { fail, handleOptions, HttpError, json, rateLimit, readJson } from '../_shared/http.ts'
 import { validate, confirmPixSchema } from '../_shared/validation.ts'
-import { assertValidTransition } from '../_shared/state-machine.ts'
 import { writeAuditLog } from '../_shared/audit.ts'
+import { confirmPixOnce, type PixConfirmationStore, type PixOperation } from '../_shared/pix-confirmation.ts'
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void }
+
+class SupabasePixStore implements PixConfirmationStore {
+  constructor(private admin: SupabaseClient) {}
+
+  async find(userId: string, operationId: string): Promise<PixOperation | null> {
+    const { data, error } = await this.admin
+      .from('operations')
+      .select('id,status,request_json,usdt_amount_text,receiver_wallet')
+      .eq('id', operationId)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (error) throw error
+    if (!data) return null
+    return {
+      id: data.id as string,
+      status: data.status as string,
+      requestJson: (data.request_json ?? {}) as Record<string, unknown>,
+      amount: data.usdt_amount_text as string,
+      receiverWallet: data.receiver_wallet as string,
+    }
+  }
+
+  async claim(
+    userId: string,
+    operationId: string,
+    expectedStatus: 'created' | 'pix_pending',
+    requestJson: Record<string, unknown>,
+  ): Promise<PixOperation | null> {
+    const { data, error } = await this.admin
+      .from('operations')
+      .update({ status: 'pix_confirmed', request_json: requestJson })
+      .eq('id', operationId)
+      .eq('user_id', userId)
+      .eq('status', expectedStatus)
+      .select('id,status,request_json,usdt_amount_text,receiver_wallet')
+      .maybeSingle()
+    if (error) throw error
+    if (!data) return null
+    return {
+      id: data.id as string,
+      status: data.status as string,
+      requestJson: (data.request_json ?? {}) as Record<string, unknown>,
+      amount: data.usdt_amount_text as string,
+      receiverWallet: data.receiver_wallet as string,
+    }
+  }
+}
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -15,93 +65,89 @@ Deno.serve(async (req) => {
     const body = await readJson(req)
     const { operation_id } = validate(confirmPixSchema, body)
 
-    const { data: op, error } = await admin
-      .from('operations')
-      .select('id, status, user_id, request_json, usdt_amount_text, receiver_wallet')
-      .eq('id', operation_id)
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (error) throw error
-    if (!op) throw new HttpError(404, 'Operation not found')
-
-    const current = op.status as string
-    assertValidTransition(current, 'pix_confirmed')
-
-    // Simulated provider approval: sandbox MVP confirms instantly.
-    const requestJson = (op.request_json ?? {}) as Record<string, unknown>
-    const updated = {
-      ...requestJson,
-      paid_at: new Date().toISOString(),
-      pix_provider: 'sandbox-simulated',
-    }
-    const { data: confirmed, error: upErr } = await admin
-      .from('operations')
-      .update({ status: 'pix_confirmed', request_json: updated })
-      .eq('id', operation_id)
-      .select('id, status')
-      .single()
-    if (upErr) throw upErr
-
-    await writeAuditLog(admin, {
-      user_id: userId,
-      action: 'OPERATION_PIX_CONFIRMED',
-      resource_type: 'operation',
-      resource_id: operation_id,
-      metadata: { previous_status: current },
-    })
-
-    // Fire-and-forget settlement.
-    EdgeRuntime.waitUntil(
-      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/settle-operation`, {
-        method: 'POST',
-        headers: {
-          'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ operation_id }),
-      }).catch(() => {}),
+    const store = new SupabasePixStore(admin)
+    const paidAt = new Date().toISOString()
+    const { operation, previousStatus, shouldDispatch } = await confirmPixOnce(
+      store,
+      userId,
+      operation_id,
+      paidAt,
     )
 
-    // Fire-and-forget email notification.
-    EdgeRuntime.waitUntil(
-      (async () => {
-        try {
-          const userRes = await fetch(
-            `${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${userId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-              },
-            },
-          )
-          if (!userRes.ok) return
-          const { email } = (await userRes.json()) as { email?: string }
-          if (!email) return
+    if (shouldDispatch) {
+      await writeAuditLog(admin, {
+        user_id: userId,
+        action: 'OPERATION_PIX_CONFIRMED',
+        resource_type: 'operation',
+        resource_id: operation_id,
+        metadata: { previous_status: previousStatus },
+      })
 
-          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
-            },
-            body: JSON.stringify({
-              to: email,
-              template: 'operation_confirmed',
-              params: {
-                operationId: op.id as string,
-                amount: op.usdt_amount_text as string,
-                receiverWallet: op.receiver_wallet as string,
-              },
-            }),
+      // Fire-and-forget settlement with response.ok check. Log only stable code and operation ID.
+      EdgeRuntime.waitUntil(
+        fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/settle-operation`, {
+          method: 'POST',
+          headers: {
+            'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ operation_id }),
+        })
+          .then((res) => {
+            if (!res.ok) {
+              console.error(
+                JSON.stringify({ code: 'PIX_SETTLE_DISPATCH_FAILED', operation_id }),
+              )
+            }
           })
-        } catch {
-          // Fire-and-forget: never break settlement
-        }
-      })(),
-    )
+          .catch(() => {
+            console.error(
+              JSON.stringify({ code: 'PIX_SETTLE_DISPATCH_FAILED', operation_id }),
+            )
+          }),
+      )
 
-    return json({ ok: true, operation: confirmed })
+      // Fire-and-forget email notification.
+      EdgeRuntime.waitUntil(
+        (async () => {
+          try {
+            const userRes = await fetch(
+              `${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users/${userId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                  apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+                },
+              },
+            )
+            if (!userRes.ok) return
+            const { email } = (await userRes.json()) as { email?: string }
+            if (!email) return
+
+            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-internal-secret': Deno.env.get('INTERNAL_SETTLE_SECRET') ?? '',
+              },
+              body: JSON.stringify({
+                to: email,
+                template: 'operation_confirmed',
+                params: {
+                  operationId: operation.id,
+                  amount: operation.amount,
+                  receiverWallet: operation.receiverWallet,
+                },
+              }),
+            })
+          } catch {
+            // Fire-and-forget: never break settlement
+          }
+        })(),
+      )
+    }
+
+    return json({ ok: true, operation })
   } catch (err) {
     return fail(err)
   }

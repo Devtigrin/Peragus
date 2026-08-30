@@ -3,6 +3,7 @@ import { fail, handleOptions, HttpError, json, rateLimit, readJson, rethrow } fr
 import { generatePixCode } from '../_shared/pix.ts'
 import { validate, createOperationSchema } from '../_shared/validation.ts'
 import { writeAuditLog } from '../_shared/audit.ts'
+import { postgresErrorCode, sameOperationRequest } from '../_shared/operation-idempotency.ts'
 
 Deno.serve(async (req) => {
   const options = handleOptions(req)
@@ -26,56 +27,60 @@ Deno.serve(async (req) => {
     const pix_code = generatePixCode(operationId)
 
     let row: Record<string, unknown> | null = null
-    try {
-      const { data, error } = await admin
-        .from('operations')
-        .insert({
-          id: operationId,
-          user_id: userId,
-          request_id,
-          status: 'created',
-          chain,
-          token_symbol,
-          usdt_amount_text: amount,
-          receiver_wallet,
-          request_json: {},
-          pix_code,
-          error_message: null,
-        })
-        .select('*')
-        .single()
-      if (error) rethrow(error)
-      row = data
-
-      await writeAuditLog(admin, {
+    const { data, error } = await admin
+      .from('operations')
+      .insert({
+        id: operationId,
         user_id: userId,
-        action: 'OPERATION_CREATED',
-        resource_type: 'operation',
-        resource_id: row!.id,
-        metadata: { amount, receiver_wallet, chain, token_symbol },
         request_id,
+        status: 'created',
+        chain,
+        token_symbol,
+        usdt_amount_text: amount,
+        receiver_wallet,
+        request_json: {},
+        pix_code,
+        error_message: null,
       })
-    } catch (err) {
-      const code = (err as { code?: string })?.code
-      if (code !== '23505') rethrow(err)
-      const { data: existing, error: exErr } = await admin
+      .select('*')
+      .single()
+    if (error) {
+      if (postgresErrorCode(error) !== '23505') rethrow(error)
+      const { data: existing, error: existingError } = await admin
         .from('operations')
         .select('*')
         .eq('user_id', userId)
         .eq('request_id', request_id)
         .maybeSingle()
-      if (exErr) rethrow(exErr)
+      if (existingError) rethrow(existingError)
       if (!existing) throw new HttpError(409, 'Idempotency collision but operation not found')
+      if (!sameOperationRequest(existing, {
+        amount,
+        receiverWallet: receiver_wallet,
+        chain,
+      })) {
+        throw new HttpError(409, 'request_id already used with different payload')
+      }
       return json({
         ok: true,
         idempotent: true,
         operation: {
           id: existing.id,
           status: existing.status,
-          pix_code: (existing as { pix_code?: string }).pix_code ?? null,
+          pix_code: existing.pix_code ?? null,
         },
       })
     }
+    row = data
+
+    await writeAuditLog(admin, {
+      user_id: userId,
+      action: 'OPERATION_CREATED',
+      resource_type: 'operation',
+      resource_id: row!.id as string,
+      metadata: { amount, receiver_wallet, chain, token_symbol },
+      request_id,
+    })
 
     return json(
       {
