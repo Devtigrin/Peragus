@@ -38,7 +38,7 @@ describe('Operations page', () => {
   })
 
   it('renders operations list with amount and pix code', async () => {
-    mockCall.mockResolvedValue([op({})])
+    mockCall.mockResolvedValue({ operations: [op({})] })
     render(
       <MemoryRouter>
         <Operations locale="pt" />
@@ -50,7 +50,7 @@ describe('Operations page', () => {
   })
 
   it('shows empty state when no operations', async () => {
-    mockCall.mockResolvedValue([])
+    mockCall.mockResolvedValue({ operations: [] })
     render(
       <MemoryRouter>
         <Operations locale="pt" />
@@ -60,9 +60,9 @@ describe('Operations page', () => {
   })
 
   it('renders confirmed operation with explorer link', async () => {
-    mockCall.mockResolvedValue([
-      op({ status: 'confirmed', tx_hash: '0xdead', pix_code: null }),
-    ])
+    mockCall.mockResolvedValue({
+      operations: [op({ status: 'confirmed', tx_hash: '0xdead', pix_code: null })],
+    })
     render(
       <MemoryRouter>
         <Operations locale="en" />

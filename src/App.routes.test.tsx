@@ -53,7 +53,7 @@ const { mockSupabase, mockSession } = vi.hoisted(() => {
 vi.mock('@/lib/supabase', () => ({ supabase: mockSupabase }))
 
 vi.mock('@/lib/functions', () => ({
-  callEdge: vi.fn(async () => []),
+  callEdge: vi.fn(async () => ({ operations: [] })),
 }))
 
 import { supabase } from '@/lib/supabase'

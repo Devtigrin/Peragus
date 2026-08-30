@@ -49,10 +49,10 @@ export function Operations({ locale }: { locale: Locale }) {
 
   const load = useCallback(async () => {
     try {
-      const data = await callEdge<Operation[]>('list-operations')
-      setOperations(data)
+      const data = await callEdge<{ operations: Operation[] }>('list-operations')
+      setOperations(data.operations)
       setLoadError(false)
-      return data
+      return data.operations
     } catch {
       setLoadError(true)
       return null
@@ -61,10 +61,10 @@ export function Operations({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     let cancelled = false
-    callEdge<Operation[]>('list-operations')
+    callEdge<{ operations: Operation[] }>('list-operations')
       .then((data) => {
         if (cancelled) return
-        setOperations(data)
+        setOperations(data.operations)
         setLoadError(false)
       })
       .catch(() => {
