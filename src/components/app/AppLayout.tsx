@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/AuthProvider'
 import { appContent } from '@/content/app'
 import { appPath, docsPath, homePath, type Locale } from '@/i18n/routing'
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PeragusLogo } from '@/components/brand/PeragusLogo'
 
-export function AppLayout({ locale, children }: { locale: Locale; children: ReactNode }) {
+export function AppLayout({ locale }: { locale: Locale }) {
   const c = appContent[locale].shell
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -69,7 +68,7 @@ export function AppLayout({ locale, children }: { locale: Locale; children: Reac
             tabIndex={-1}
             className="flex-1 bg-[repeating-linear-gradient(180deg,transparent_0px,transparent_79px,var(--color-hairline)_79px,var(--color-hairline)_80px)] px-4 py-6 lg:px-8 lg:py-10"
           >
-            {children}
+            <Outlet />
           </main>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { MarketingLayout } from '@/components/layout/MarketingLayout'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Landing } from '@/pages/Landing'
 import { LegalPage } from '@/pages/Legal'
 import { NotFound } from '@/pages/NotFound'
@@ -39,19 +40,19 @@ export default function App() {
       {LOCALES.map((locale) => (
         <Route
           key={locale}
-          path={appPath(locale)}
+          path={`${appPath(locale)}/*`}
           element={
             <RequireAuth>
-              <AppLayout locale={locale}>
-                <Routes>
-                  <Route index element={<Operations locale={locale} />} />
-                  <Route path="chaves-api" element={<ApiKeys locale={locale} />} />
-                  <Route path="configuracoes" element={<Settings locale={locale} />} />
-                </Routes>
-              </AppLayout>
+              <ErrorBoundary context={`app:${locale}`}>
+                <AppLayout locale={locale} />
+              </ErrorBoundary>
             </RequireAuth>
           }
-        />
+        >
+          <Route index element={<Operations locale={locale} />} />
+          <Route path="chaves-api" element={<ApiKeys locale={locale} />} />
+          <Route path="configuracoes" element={<Settings locale={locale} />} />
+        </Route>
       ))}
       <Route path="*" element={<LocalizedNotFound />} />
     </Routes>

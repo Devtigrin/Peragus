@@ -27,16 +27,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
+    let active = true
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return
+        setSession(data.session)
+      })
+      .catch((err) => {
+        // Falha ao restaurar a sessão (ex.: storage/erro de rede). Não deixamos
+        // o usuario preso em loading: seguimos como deslogado.
+        if (typeof console !== 'undefined') console.error('[peragus:auth] getSession failed:', err?.message)
+        if (!active) return
+        setSession(null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s)
       if (event === 'PASSWORD_RECOVERY') setRecovering(true)
       if (event === 'SIGNED_OUT') setRecovering(false)
     })
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      active = false
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   const value: AuthState = {
