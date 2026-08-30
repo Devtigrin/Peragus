@@ -19,9 +19,46 @@ interface ApiKey {
 
 function formatDate(iso: string, locale: Locale) {
   const tag = locale === 'pt' ? 'pt-BR' : locale === 'es' ? 'es-419' : 'en-US'
-  return new Intl.DateTimeFormat(tag, { dateStyle: 'short', timeStyle: 'short' }).format(
-    new Date(iso),
-  )
+  try {
+    return new Intl.DateTimeFormat(tag, { dateStyle: 'short', timeStyle: 'short' }).format(
+      new Date(iso),
+    )
+  } catch {
+    return iso
+  }
+}
+
+function toUserMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err ?? '')
+  if (/permission denied/i.test(raw)) {
+    // never expose internal pg errors to the end user
+    if (typeof console !== 'undefined') console.error('[peragus:api_keys] permission denied:', raw)
+    return 'Não foi possível realizar a operação. Tente novamente.'
+  }
+  if (/not authenticated|unauthenticated|jwt/i.test(raw)) {
+    return 'Sessão expirada. Faça login novamente.'
+  }
+  // keep short, safe messages; log full detail for debugging
+  if (raw.length > 200) {
+    if (typeof console !== 'undefined') console.error('[peragus:api_keys]', raw)
+    return 'Não foi possível completar a operação. Tente novamente.'
+  }
+  return raw || 'Não foi possível completar a operação. Tente novamente.'
+}
+
+function extractRawKey(data: unknown): string | null {
+  if (!data) return null
+  if (typeof data === 'string') return data
+  if (Array.isArray(data) && data.length > 0) {
+    const first = data[0] as Record<string, unknown>
+    if (first && typeof first.key === 'string') return first.key
+    if (first && typeof first.key === 'string') return first.key as string
+  }
+  if (typeof data === 'object' && data !== null && 'key' in data) {
+    const v = (data as Record<string, unknown>).key
+    if (typeof v === 'string') return v
+  }
+  return null
 }
 
 export function ApiKeys({ locale }: { locale: Locale }) {
@@ -35,31 +72,42 @@ export function ApiKeys({ locale }: { locale: Locale }) {
   const [confirmId, setConfirmId] = useState<string | null>(null)
 
   async function load() {
-    const { data, error: err } = await supabase
-      .from('api_keys')
-      .select('id,name,key_prefix,created_at,last_used_at,revoked_at')
-      .order('created_at', { ascending: false })
-    if (err) {
-      setError(err.message)
-    } else {
-      setKeys(data as ApiKey[])
+    try {
+      const { data, error: err } = await supabase
+        .from('api_keys')
+        .select('id,name,key_prefix,created_at,last_used_at,revoked_at')
+        .order('created_at', { ascending: false })
+      if (err) {
+        setError(toUserMessage(err))
+        return
+      }
+      setKeys((data ?? []) as ApiKey[])
+      setError('')
+    } catch (err) {
+      setError(toUserMessage(err))
     }
   }
 
   useEffect(() => {
     let cancelled = false
-    supabase
-      .from('api_keys')
-      .select('id,name,key_prefix,created_at,last_used_at,revoked_at')
-      .order('created_at', { ascending: false })
-      .then(({ data, error: err }) => {
+    ;(async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('api_keys')
+          .select('id,name,key_prefix,created_at,last_used_at,revoked_at')
+          .order('created_at', { ascending: false })
         if (cancelled) return
         if (err) {
-          setError(err.message)
+          setError(toUserMessage(err))
         } else {
-          setKeys(data as ApiKey[])
+          setKeys((data ?? []) as ApiKey[])
+          setError('')
         }
-      })
+      } catch (err: unknown) {
+        if (cancelled) return
+        setError(toUserMessage(err))
+      }
+    })()
     return () => {
       cancelled = true
     }
@@ -70,14 +118,23 @@ export function ApiKeys({ locale }: { locale: Locale }) {
     setBusy(true)
     setError('')
     try {
-      const { data, error: err } = await supabase.rpc('create_api_key', { p_name: name })
+      const trimmed = name.trim()
+      if (!trimmed) {
+        setError('Informe um nome para a chave.')
+        return
+      }
+      const { data, error: err } = await supabase.rpc('create_api_key', { p_name: trimmed })
       if (err) throw err
-      setFreshKey(data as unknown as string)
+      const raw = extractRawKey(data)
+      if (!raw) {
+        throw new Error('Não foi possível gerar a chave de API. Tente novamente.')
+      }
+      setFreshKey(raw)
       setFormOpen(false)
       setName('')
       await load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(toUserMessage(err))
     } finally {
       setBusy(false)
     }
@@ -85,11 +142,32 @@ export function ApiKeys({ locale }: { locale: Locale }) {
 
   async function onRevoke(id: string) {
     setConfirmId(null)
-    await supabase
-      .from('api_keys')
-      .update({ revoked_at: new Date().toISOString() })
-      .eq('id', id)
-    await load()
+    setError('')
+    try {
+      // Prefer secure RPC; fallback to direct update if RPC not yet deployed (backward compat)
+      const rpc = await supabase.rpc('revoke_api_key', { p_id: id })
+      if (rpc.error) {
+        // If RPC missing (404) fallback to direct update for legacy envs
+        const msg = String(rpc.error.message ?? '')
+        if (/not found|does not exist|PGRST/i.test(msg)) {
+          const { error: updErr } = await supabase
+            .from('api_keys')
+            .update({ revoked_at: new Date().toISOString() })
+            .eq('id', id)
+          if (updErr) throw updErr
+        } else {
+          throw rpc.error
+        }
+      }
+      await load()
+    } catch (err) {
+      setError(toUserMessage(err))
+      try {
+        await load()
+      } catch {
+        // load already surfaces its own error via setError
+      }
+    }
   }
 
   return (

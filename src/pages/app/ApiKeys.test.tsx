@@ -66,12 +66,32 @@ describe('ApiKeys page', () => {
 
   it('revokes a key after confirmation step', async () => {
     const user = userEvent.setup()
+    rpcMock.mockResolvedValue({ data: null, error: null })
     render(<ApiKeys locale="pt" />)
     const revokeButtons = await screen.findAllByRole('button', { name: 'Revogar' })
     await user.click(revokeButtons[0])
     expect(screen.getByText('Confirmar revogação?')).toBeInTheDocument()
     const confirmButtons = screen.getAllByRole('button', { name: 'Revogar' })
     await user.click(confirmButtons[confirmButtons.length - 1])
-    expect(selectEq).toHaveBeenCalled()
+    // either secure RPC or fallback direct update must have been called
+    expect(rpcMock.mock.calls.some((c) => c[0] === 'revoke_api_key') || selectEq.mock.calls.length > 0).toBe(true)
+  })
+
+  it('handles RPC returning TABLE shape (array with key field)', async () => {
+    const user = userEvent.setup()
+    rpcMock.mockImplementation((fn: string) => {
+      if (fn === 'create_api_key') {
+        return Promise.resolve({
+          data: [{ id: 'x', name: 'Nova', key: 'pk_live_array999', key_prefix: 'pk_live_arr', created_at: new Date().toISOString() }],
+          error: null,
+        })
+      }
+      return Promise.resolve({ data: null, error: null })
+    })
+    render(<ApiKeys locale="pt" />)
+    await user.click(await screen.findByRole('button', { name: 'Criar chave' }))
+    await user.type(screen.getByLabelText('Nome da chave'), 'Nova2')
+    await user.click(screen.getByRole('button', { name: 'Gerar chave' }))
+    expect(await screen.findByText('pk_live_array999')).toBeInTheDocument()
   })
 })

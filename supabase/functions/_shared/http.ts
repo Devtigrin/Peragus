@@ -7,7 +7,7 @@ const ALLOWED_ORIGINS = [
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0],
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret, x-api-key',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
