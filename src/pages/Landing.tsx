@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { useAuthOptional } from '@/auth/AuthProvider'
 import type { Locale } from '@/i18n/routing'
-import { homePath, sandboxPath, sectionPath } from '@/i18n/routing'
+import { appPath, homePath, sandboxPath, sectionPath } from '@/i18n/routing'
 import { homeContent } from '@/content/home'
 import { Button } from '@/components/ui/button'
 import { Container } from '@/components/ui/container'
@@ -13,6 +14,10 @@ import { PageMetadata } from '@/components/seo/PageMetadata'
 
 export function Landing({ locale }: { locale: Locale }) {
   const content = homeContent[locale]
+  const auth = useAuthOptional()
+  if (auth && !auth.loading && auth.session) {
+    return <Navigate to={appPath(locale)} replace />
+  }
   return (
     <>
       <PageMetadata

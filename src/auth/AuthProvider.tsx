@@ -79,3 +79,9 @@ export function useAuth(): AuthState {
   if (!ctx) throw new Error('useAuth outside AuthProvider')
   return ctx
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAuthOptional(): AuthState | null {
+  const ctx = useContext(Ctx)
+  return ctx
+}

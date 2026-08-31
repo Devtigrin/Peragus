@@ -32,7 +32,7 @@ export function AppLayout({ locale }: { locale: Locale }) {
       </a>
       <div className="mx-auto flex max-w-7xl flex-col lg:min-h-screen lg:flex-row">
         <aside className="border-b border-hairline p-4 lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r lg:p-6">
-          <NavLink to={homePath(locale)} className="inline-flex min-h-11 items-center" aria-label="Peragus — Início">
+          <NavLink to={appPath(locale)} className="inline-flex min-h-11 items-center" aria-label="Peragus — Início">
             <PeragusLogo />
           </NavLink>
           <nav aria-label={c.navOperations} className="mt-6 flex gap-1 overflow-x-auto lg:mt-8 lg:flex-col lg:overflow-visible lg:gap-1.5">

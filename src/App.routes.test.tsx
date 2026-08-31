@@ -152,4 +152,34 @@ describe('fluxo autenticado /app', () => {
     expect(main).not.toBeNull()
     expect(main!.className).not.toContain('repeating-linear-gradient')
   })
+
+  it('logo da AppLayout aponta para /app quando autenticado e nao causa signOut', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/app')
+    await waitAuthReady()
+    const logo = screen.getByLabelText('Peragus — Início')
+    expect(logo.getAttribute('href')).toBe('/app')
+    expect(supabase.auth.signOut).not.toHaveBeenCalled()
+  })
+
+  it('logo em /app/chaves-api e /app/docs tambem aponta para /app', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/app/chaves-api')
+    await waitAuthReady()
+    expect(screen.getByLabelText('Peragus — Início').getAttribute('href')).toBe('/app')
+  })
+
+  it('usuario autenticado acessando / e redirecionado para /app', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/')
+    await waitAuthReady()
+    expect(await screen.findByRole('heading', { name: 'Operações' })).toBeInTheDocument()
+  })
+
+  it('/ deslogado permanece na landing', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null }, error: null })
+    renderApp('/')
+    await waitFor(() => expect(screen.getByText(/Pix no Brasil/i)).toBeInTheDocument())
+    expect(screen.queryByText('Operações')).not.toBeInTheDocument()
+  })
 })
