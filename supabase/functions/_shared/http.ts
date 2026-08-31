@@ -11,17 +11,28 @@ export const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
-export function json(data: unknown, status = 200): Response {
+function getAllowedOrigin(origin: string | null): string {
+  return origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+}
+
+function corsHeadersForRequest(req?: Request): Record<string, string> {
+  if (!req) return { ...corsHeaders }
+  const origin = req.headers.get('origin')
+  const allowedOrigin = getAllowedOrigin(origin)
+  return { ...corsHeaders, 'Access-Control-Allow-Origin': allowedOrigin }
+}
+
+export function json(data: unknown, status = 200, req?: Request): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeadersForRequest(req), 'Content-Type': 'application/json' },
   })
 }
 
 export function handleOptions(req: Request): Response | null {
   if (req.method !== 'OPTIONS') return null
   const origin = req.headers.get('origin') ?? ''
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const allowedOrigin = getAllowedOrigin(origin)
   return new Response('ok', {
     headers: { ...corsHeaders, 'Access-Control-Allow-Origin': allowedOrigin },
   })
@@ -46,7 +57,7 @@ export function rateLimit(key: string): void {
   HITS.set(key, recent)
 }
 
-export function fail(err: unknown): Response {
+export function fail(err: unknown, req?: Request): Response {
   const status = err instanceof HttpError ? err.status : 400
   let message: string
   if (err instanceof HttpError || err instanceof Error) {
@@ -60,7 +71,7 @@ export function fail(err: unknown): Response {
       message = 'Unknown error'
     }
   }
-  return json({ error: message }, status)
+  return json({ error: message }, status, req)
 }
 
 // Normalize non-Error Supabase/Postgrest failures so their `.message`

@@ -29,8 +29,14 @@ export const getOperationStatusSchema = z.object({
 })
 
 export const listOperationsSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-  before: z.string().optional(),
+  limit: z.preprocess(
+    (v) => (v === null || v === '' || (typeof v === 'string' && v.trim() === '') ? undefined : v),
+    z.coerce.number().int().min(1).max(50).default(20),
+  ),
+  before: z.preprocess(
+    (v) => (v === null || v === '' || (typeof v === 'string' && v.trim() === '') ? undefined : v),
+    z.string().optional(),
+  ),
 })
 
 export const settleOperationSchema = z.object({ operation_id: uuidSchema })

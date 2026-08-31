@@ -28,10 +28,10 @@ Deno.serve(async (req) => {
   const internalSecret = Deno.env.get('INTERNAL_SETTLE_SECRET')
   const callerSecret = req.headers.get('x-internal-secret')
   if (!internalSecret || callerSecret !== internalSecret) {
-    return fail(new HttpError(401, 'Unauthorized: internal endpoint'))
+    return fail(new HttpError(401, 'Unauthorized: internal endpoint'), req)
   }
 
-  if (req.method !== 'POST') return fail(new HttpError(405, 'Method Not Allowed'))
+  if (req.method !== 'POST') return fail(new HttpError(405, 'Method Not Allowed'), req)
 
   const supabaseUrl = requireEnv('SUPABASE_URL')
   const serviceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
         metadata: { tx_hash: result.txHash, status: result.status, code: result.code },
       })
       logger.info('settle-operation pending', { operation_id: operationId, tx_hash: result.txHash, status: result.status, code: result.code, function: 'settle-operation' })
-      return json({ ok: true, status: result.status, tx_hash: result.txHash, code: result.code }, 202)
+      return json({ ok: true, status: result.status, tx_hash: result.txHash, code: result.code }, 202, req)
     }
 
     await writeAuditLog(admin, {
@@ -157,11 +157,11 @@ Deno.serve(async (req) => {
       metadata: { tx_hash: result.txHash, status: result.status },
     })
     logger.info('settle-operation completed', { operation_id: operationId, tx_hash: result.txHash, status: result.status, function: 'settle-operation' })
-    return json({ ok: true, status: result.status, tx_hash: result.txHash }, 200)
+    return json({ ok: true, status: result.status, tx_hash: result.txHash }, 200, req)
   } catch (err) {
     if (err instanceof SettlementError) {
       logger.error('settle-operation failed', { operation_id: operationIdRef ?? undefined, code: err.code, status: err.status, function: 'settle-operation' })
-      return fail(new HttpError(err.status, err.code))
+      return fail(new HttpError(err.status, err.code), req)
     }
     // Include only stable code in logs for non-settlement errors; never include raw provider text
     const opId = operationIdRef ?? undefined
@@ -170,6 +170,6 @@ Deno.serve(async (req) => {
     } else {
       logger.error('settle-operation failed', { code: 'SETTLEMENT_FAILED', function: 'settle-operation' })
     }
-    return fail(new HttpError(500, 'SETTLEMENT_FAILED'))
+    return fail(new HttpError(500, 'SETTLEMENT_FAILED'), req)
   }
 })

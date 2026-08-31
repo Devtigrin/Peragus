@@ -14,16 +14,24 @@ Deno.serve(async (req) => {
     )
     const { error } = await admin.from('operations').select('id').limit(1)
 
-    return json({
-      status: error ? 'degraded' : 'healthy',
-      timestamp: new Date().toISOString(),
-      database: error ? 'unreachable' : 'connected',
-    })
+    return json(
+      {
+        status: error ? 'degraded' : 'healthy',
+        timestamp: new Date().toISOString(),
+        database: error ? 'unreachable' : 'connected',
+      },
+      200,
+      req,
+    )
   } catch (err) {
-    return json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: err instanceof Error ? err.message : 'unknown',
-    }, 503)
+    return json(
+      {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: err instanceof Error ? err.message : 'unknown',
+      },
+      503,
+      req,
+    )
   }
 })

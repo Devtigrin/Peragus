@@ -8,7 +8,7 @@ const COLUMNS =
 Deno.serve(async (req) => {
   const options = handleOptions(req)
   if (options) return options
-  if (req.method !== 'GET') return fail(new HttpError(405, 'Method Not Allowed'))
+  if (req.method !== 'GET') return fail(new HttpError(405, 'Method Not Allowed'), req)
   const admin = adminClient()
   try {
     const { userId } = await authenticate(req, admin)
@@ -22,9 +22,9 @@ Deno.serve(async (req) => {
       .eq('user_id', userId)
       .maybeSingle()
     if (error) throw error
-    if (!data) return fail(new HttpError(404, 'Operation not found'))
-    return json({ ok: true, operation: data })
+    if (!data) return fail(new HttpError(404, 'Operation not found'), req)
+    return json({ ok: true, operation: data }, 200, req)
   } catch (err) {
-    return fail(err)
+    return fail(err, req)
   }
 })

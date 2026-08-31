@@ -8,7 +8,7 @@ import { postgresErrorCode, sameOperationRequest } from '../_shared/operation-id
 Deno.serve(async (req) => {
   const options = handleOptions(req)
   if (options) return options
-  if (req.method !== 'POST') return fail(new HttpError(405, 'Method Not Allowed'))
+  if (req.method !== 'POST') return fail(new HttpError(405, 'Method Not Allowed'), req)
   const admin = adminClient()
   try {
     const { userId } = await authenticate(req, admin)
@@ -61,15 +61,19 @@ Deno.serve(async (req) => {
       })) {
         throw new HttpError(409, 'request_id already used with different payload')
       }
-      return json({
-        ok: true,
-        idempotent: true,
-        operation: {
-          id: existing.id,
-          status: existing.status,
-          pix_code: existing.pix_code ?? null,
+      return json(
+        {
+          ok: true,
+          idempotent: true,
+          operation: {
+            id: existing.id,
+            status: existing.status,
+            pix_code: existing.pix_code ?? null,
+          },
         },
-      })
+        200,
+        req,
+      )
     }
     row = data
 
@@ -94,8 +98,9 @@ Deno.serve(async (req) => {
         },
       },
       201,
+      req,
     )
   } catch (err) {
-    return fail(err)
+    return fail(err, req)
   }
 })

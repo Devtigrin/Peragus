@@ -8,15 +8,17 @@ const COLUMNS =
 Deno.serve(async (req) => {
   const options = handleOptions(req)
   if (options) return options
-  if (req.method !== 'GET') return fail(new HttpError(405, 'Method Not Allowed'))
+  if (req.method !== 'GET') return fail(new HttpError(405, 'Method Not Allowed'), req)
   const admin = adminClient()
   try {
     const { userId } = await authenticate(req, admin)
     rateLimit(userId)
     const url = new URL(req.url)
+    const limitRaw = url.searchParams.get('limit')
+    const beforeRaw = url.searchParams.get('before')
     const { limit, before } = validate(listOperationsSchema, {
-      limit: url.searchParams.get('limit'),
-      before: url.searchParams.get('before'),
+      limit: limitRaw && limitRaw.trim() ? limitRaw : undefined,
+      before: beforeRaw && beforeRaw.trim() ? beforeRaw : undefined,
     })
 
     let query = admin
@@ -33,25 +35,29 @@ Deno.serve(async (req) => {
     const hasMore = rows.length > limit
     const page = hasMore ? rows.slice(0, limit) : rows
 
-    return json({
-      ok: true,
-      operations: page.map((r) => ({
-        id: r.id,
-        status: r.status,
-        chain: r.chain,
-        token_symbol: r.token_symbol,
-        usdt_amount_text: r.usdt_amount_text,
-        receiver_wallet: r.receiver_wallet,
-        sender_wallet: r.sender_wallet,
-        tx_hash: r.tx_hash,
-        error_message: r.error_message,
-        created_at: r.created_at,
-        updated_at: r.updated_at,
-        pix_code: r.pix_code ?? null,
-      })),
-      next_before: hasMore ? page[page.length - 1].created_at : null,
-    })
+    return json(
+      {
+        ok: true,
+        operations: page.map((r) => ({
+          id: r.id,
+          status: r.status,
+          chain: r.chain,
+          token_symbol: r.token_symbol,
+          usdt_amount_text: r.usdt_amount_text,
+          receiver_wallet: r.receiver_wallet,
+          sender_wallet: r.sender_wallet,
+          tx_hash: r.tx_hash,
+          error_message: r.error_message,
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+          pix_code: r.pix_code ?? null,
+        })),
+        next_before: hasMore ? page[page.length - 1].created_at : null,
+      },
+      200,
+      req,
+    )
   } catch (err) {
-    return fail(err)
+    return fail(err, req)
   }
 })
