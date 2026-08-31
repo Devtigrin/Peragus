@@ -237,7 +237,7 @@ export function ApiKeys({ locale }: { locale: Locale }) {
         <div className="mt-8 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
           <p className="mx-auto max-w-sm text-sm leading-6 text-secondary">
             {c.empty}{' '}
-            <a href={`/${locale === 'pt' ? '' : locale + '/'}docs`} className="text-primary underline underline-offset-4">
+            <a href={locale === 'pt' ? '/app/docs' : `/${locale}/app/docs`} className="text-primary underline underline-offset-4">
               Docs
             </a>{' '}
             — {c.docsLink}

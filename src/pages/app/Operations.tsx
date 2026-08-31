@@ -57,7 +57,8 @@ export function Operations({ locale }: { locale: Locale }) {
       setOperations(data.operations)
       setLoadError(false)
       return data.operations
-    } catch {
+    } catch (err) {
+      if (typeof console !== 'undefined') console.error('[peragus:operations] list-operations failed:', err instanceof Error ? err.message : err)
       setLoadError(true)
       return null
     }
@@ -71,7 +72,8 @@ export function Operations({ locale }: { locale: Locale }) {
         setOperations(data.operations)
         setLoadError(false)
       })
-      .catch(() => {
+      .catch((err) => {
+        if (typeof console !== 'undefined') console.error('[peragus:operations] list-operations failed:', err instanceof Error ? err.message : err)
         if (!cancelled) setLoadError(true)
       })
     return () => {
@@ -159,6 +161,13 @@ export function Operations({ locale }: { locale: Locale }) {
     setRequestId(null)
   }
 
+  const isLoading = operations === null && !loadError
+  const isInitialError = loadError && operations === null
+  const isEmpty = operations !== null && operations.length === 0
+  const isSuccess = operations !== null && operations.length > 0
+  // erro de polling (lista já existe) não deve esconder a lista, apenas mostra banner
+  const isPollError = loadError && isSuccess
+
   return (
     <>
       <PageMetadata
@@ -168,12 +177,12 @@ export function Operations({ locale }: { locale: Locale }) {
         canonicalPath={locale === 'pt' ? '/app' : `/${locale}/app`}
         alternates={{ pt: '/app', es: '/es/app', en: '/en/app' }}
       />
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-[240px] flex-1">
           <h1 className="font-display text-2xl font-semibold tracking-[-0.02em] text-primary">{c.title}</h1>
-          <p className="mt-1.5 max-w-prose text-sm text-secondary">{c.description}</p>
+          <p className="mt-1.5 max-w-3xl text-sm leading-6 text-secondary">{c.description}</p>
         </div>
-        <Button onClick={formOpen ? closeForm : openForm}>
+        <Button onClick={formOpen ? closeForm : openForm} className="shrink-0">
           {formOpen ? c.cancel : c.newOperation}
         </Button>
       </div>
@@ -230,8 +239,16 @@ export function Operations({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {loadError && (
-        <div className="mt-6 flex max-w-lg flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {isInitialError && (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Notice tone="error">{c.loadError}</Notice>
+          <Button variant="secondary" size="sm" onClick={() => void load()} className="shrink-0">
+            {c.loadErrorCta}
+          </Button>
+        </div>
+      )}
+      {isPollError && (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <Notice tone="error">{c.loadError}</Notice>
           <Button variant="secondary" size="sm" onClick={() => void load()} className="shrink-0">
             {c.loadErrorCta}
@@ -239,8 +256,8 @@ export function Operations({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {operations === null && !loadError && (
-        <div aria-hidden="true" className="mt-8 overflow-hidden rounded-(--radius-panel) border border-hairline">
+      {isLoading && (
+        <div aria-hidden="true" className="mt-6 overflow-hidden rounded-(--radius-panel) border border-hairline">
           <p className="sr-only">{c.loading}</p>
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="animate-pulse border-b border-hairline p-5 last:border-b-0">
@@ -254,8 +271,8 @@ export function Operations({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {operations && operations.length === 0 && (
-        <div className="mt-8 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
+      {isEmpty && (
+        <div className="mt-6 rounded-(--radius-panel) border border-line bg-surface/40 p-8 text-center">
           <p className="mx-auto max-w-sm text-sm leading-6 text-secondary">{c.empty}</p>
           <Button className="mt-5" variant="secondary" onClick={openForm}>
             {c.emptyCta}
@@ -263,8 +280,8 @@ export function Operations({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {operations && operations.length > 0 && (
-        <ul className="mt-8 overflow-hidden rounded-(--radius-panel) border border-line">
+      {isSuccess && (
+        <ul className="mt-6 overflow-hidden rounded-(--radius-panel) border border-line">
           {(operations ?? []).map((op) => (
             <li key={op.id} className="border-b border-hairline p-5 last:border-b-0 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">

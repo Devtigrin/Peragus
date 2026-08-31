@@ -66,7 +66,7 @@ export function AppLayout({ locale }: { locale: Locale }) {
           <main
             id="app-main"
             tabIndex={-1}
-            className="flex-1 bg-[repeating-linear-gradient(180deg,transparent_0px,transparent_79px,var(--color-hairline)_79px,var(--color-hairline)_80px)] px-4 py-6 lg:px-8 lg:py-10"
+            className="flex-1 px-4 py-6 lg:px-8 lg:py-8"
           >
             <Outlet />
           </main>

@@ -16,7 +16,7 @@ export function AppDocs({ locale }: { locale: Locale }) {
         alternates={{ pt: '/app/docs', es: '/es/app/docs', en: '/en/app/docs' }}
       />
       <div className="flex flex-col gap-10 lg:flex-row">
-        <DocsContent locale={locale} />
+        <DocsContent locale={locale} variant="app" />
       </div>
     </>
   )

@@ -107,4 +107,49 @@ describe('fluxo autenticado /app', () => {
     await waitAuthReady()
     expect(await screen.findByRole('heading', { name: 'Configurações' })).toBeInTheDocument()
   })
+
+  it('renderiza /app/docs autenticado dentro do AppLayout (sidebar + conta preservadas)', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/app/docs')
+    await waitAuthReady()
+    // AppLayout preservado
+    expect(screen.getByText('Sair')).toBeInTheDocument()
+    expect(screen.getByText('t@peragus.test')).toBeInTheDocument()
+    // DocsContent renderiza dentro do app
+    expect(await screen.findByText('API Reference')).toBeInTheDocument()
+    // sidebar link Docs existe e aponta para /app/docs
+    const docsLink = screen.getByRole('link', { name: 'Docs' })
+    expect(docsLink.getAttribute('href')).toBe('/app/docs')
+  })
+
+  it('protege /app/docs: sem sessao redireciona para login', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null }, error: null })
+    renderApp('/app/docs')
+    await waitAuthReady()
+    expect(await screen.findByRole('heading', { name: 'Entrar no sandbox' })).toBeInTheDocument()
+  })
+
+  it('/docs publico abre sem exigir login e sem destruir sessao (session continua em /app)', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    const { unmount } = renderApp('/docs')
+    await waitFor(() => expect(screen.getByText('API Reference')).toBeInTheDocument())
+    expect(screen.queryByText('Sair')).not.toBeInTheDocument()
+    // getSession nunca foi chamada com signOut; sessao continua
+    expect(supabase.auth.signOut).not.toHaveBeenCalled()
+    unmount()
+    // navegando depois para /app continua autenticado
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/app')
+    await waitAuthReady()
+    expect(await screen.findByRole('heading', { name: 'Operações' })).toBeInTheDocument()
+  })
+
+  it('AppLayout nao usa repeating-linear-gradient (regressao visual)', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: mockSession }, error: null })
+    renderApp('/app')
+    await waitAuthReady()
+    const main = document.getElementById('app-main')
+    expect(main).not.toBeNull()
+    expect(main!.className).not.toContain('repeating-linear-gradient')
+  })
 })

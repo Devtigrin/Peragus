@@ -1,10 +1,10 @@
 import { docsContent } from '@/content/docs'
-import { docsPath, type Locale } from '@/i18n/routing'
+import { appDocsPath, docsPath, type Locale } from '@/i18n/routing'
 
 const codeStyle =
   'mt-3 overflow-x-auto rounded-(--radius-control) border border-hairline bg-midnight p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint'
 
-export function DocsContent({ locale }: { locale: Locale }) {
+export function DocsContent({ locale, variant = 'public' }: { locale: Locale; variant?: 'public' | 'app' }) {
   const c = docsContent[locale]
   return (
     <>
@@ -105,21 +105,32 @@ export function DocsContent({ locale }: { locale: Locale }) {
             ))}
           </dl>
           <p className="mt-8 text-sm text-secondary">
-            {locale === 'pt'
-              ? 'Pronto para testar? '
-              : locale === 'es'
-                ? '¿Listo para probar? '
-                : 'Ready to try it? '}
-            <a
-              href={locale === 'pt' ? '/register' : `/${locale}/register`}
-              className="text-mint underline underline-offset-4"
-            >
-              {locale === 'pt' ? 'Crie sua conta no sandbox' : locale === 'es' ? 'Crea tu cuenta en el sandbox' : 'Create your sandbox account'}
-            </a>{' '}
-            ·{' '}
-            <a href={docsPath(locale)} className="underline underline-offset-4">
-              {docsPath(locale)}
-            </a>
+            {variant === 'app' ? (
+              <>
+                <a href={appDocsPath(locale)} className="underline underline-offset-4">
+                  {appDocsPath(locale)}
+                </a>{' '}
+                · {locale === 'pt' ? 'documentação dentro do app' : locale === 'es' ? 'documentación dentro de la app' : 'docs inside the app'}
+              </>
+            ) : (
+              <>
+                {locale === 'pt'
+                  ? 'Pronto para testar? '
+                  : locale === 'es'
+                    ? '¿Listo para probar? '
+                    : 'Ready to try it? '}
+                <a
+                  href={locale === 'pt' ? '/register' : `/${locale}/register`}
+                  className="text-mint underline underline-offset-4"
+                >
+                  {locale === 'pt' ? 'Crie sua conta no sandbox' : locale === 'es' ? 'Crea tu cuenta en el sandbox' : 'Create your sandbox account'}
+                </a>{' '}
+                ·{' '}
+                <a href={docsPath(locale)} className="underline underline-offset-4">
+                  {docsPath(locale)}
+                </a>
+              </>
+            )}
           </p>
         </section>
       </article>
