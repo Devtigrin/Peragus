@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import type { Operation } from '@/types/operation'
 import { ACTIVE_STATUSES } from '@/types/operation'
 import { validateAmount, validateEvmWallet } from '@/lib/operationValidation'
+import { mapOperationErrorToPublicMessage, toPublicOperationError } from '@/lib/operationErrors'
 
 const POLL_MS = 3000
 const ACTIVE = ACTIVE_STATUSES
@@ -131,7 +132,8 @@ export function Operations({ locale }: { locale: Locale }) {
     } catch (err) {
       // Mantem o request_id: um retry/re-submit da mesma tentativa nao deve
       // duplicar a operacao no backend.
-      setCreateError(err instanceof Error ? err.message : c.createError)
+      // Sanitiza erro interno para mensagem pública — nunca vazar código bruto.
+      setCreateError(toPublicOperationError(err, locale))
     } finally {
       setCreating(false)
     }
@@ -325,8 +327,8 @@ export function Operations({ locale }: { locale: Locale }) {
               )}
 
               {op.error_message && (
-                <p className="mt-3 font-mono text-xs text-error" role="alert">
-                  {c.errorDetail}: {op.error_message}
+                <p className="mt-3 text-xs leading-5 text-error" role="alert">
+                  {c.errorDetail}: {mapOperationErrorToPublicMessage(op.error_message, locale)}
                 </p>
               )}
             </li>

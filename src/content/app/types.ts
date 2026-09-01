@@ -42,6 +42,12 @@ export interface AppContent {
     tableHeadStatus: string
     tableHeadCreated: string
     tableHeadToken: string
+    errorInsufficientAmount: string
+    errorServiceUnavailable: string
+    errorReconciliation: string
+    errorNotFound: string
+    errorUnauthorized: string
+    errorGeneric: string
   }
   apiKeys: {
     title: string

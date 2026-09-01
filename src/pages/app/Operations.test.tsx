@@ -207,11 +207,54 @@ describe('Operations page', () => {
     openAndFillForm()
     const createBtn = submitButton()
     fireEvent.click(createBtn)
-    expect(await screen.findByText('backend down')).toBeInTheDocument()
+    // erro interno mapeado para mensagem pública genérica (não expõe "backend down")
+    expect(await screen.findByText('Não foi possível concluir a operação. Tente novamente.')).toBeInTheDocument()
+    expect(screen.queryByText('backend down')).not.toBeInTheDocument()
     fireEvent.click(createBtn)
     await waitFor(() => expect(createCalls()).toHaveLength(2))
     const [first, second] = createCalls()
     expect(first.opts.body).toEqual(expect.objectContaining({ request_id: expect.any(String) }))
     expect(second.opts.body).toEqual(first.opts.body)
+  })
+
+  it('não expõe INSUFFICIENT_TREASURY_BALANCE bruto e mostra mensagem pública', async () => {
+    mockCall.mockResolvedValue({
+      operations: [op({ status: 'failed', error_message: 'INSUFFICIENT_TREASURY_BALANCE', tx_hash: null })],
+    })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText(/O valor informado não é permitido/)).toBeInTheDocument()
+    expect(screen.queryByText('INSUFFICIENT_TREASURY_BALANCE')).not.toBeInTheDocument()
+    expect(screen.queryByText(/treasury/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/Motivo:/)).toBeInTheDocument()
+  })
+
+  it('mapeia RPC_UNAVAILABLE para serviço indisponível sem vazar código', async () => {
+    mockCall.mockResolvedValue({
+      operations: [op({ status: 'failed', error_message: 'RPC_UNAVAILABLE' })],
+    })
+    render(
+      <MemoryRouter>
+        <Operations locale="pt" />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText(/Não foi possível processar a operação no momento/)).toBeInTheDocument()
+    expect(screen.queryByText('RPC_UNAVAILABLE')).not.toBeInTheDocument()
+  })
+
+  it('mapeia SETTLEMENT_RECONCILIATION_REQUIRED corretamente', async () => {
+    mockCall.mockResolvedValue({
+      operations: [op({ status: 'failed', error_message: 'SETTLEMENT_RECONCILIATION_REQUIRED' })],
+    })
+    render(
+      <MemoryRouter>
+        <Operations locale="en" />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText(/We could not complete the operation automatically/)).toBeInTheDocument()
+    expect(screen.queryByText('SETTLEMENT_RECONCILIATION_REQUIRED')).not.toBeInTheDocument()
   })
 })
