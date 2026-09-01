@@ -14,12 +14,13 @@ import type { Operation } from '@/types/operation'
 import { ACTIVE_STATUSES } from '@/types/operation'
 import { validateAmount, validateEvmWallet } from '@/lib/operationValidation'
 import { mapOperationErrorToPublicMessage, toPublicOperationError } from '@/lib/operationErrors'
+import { formatOperationAmount } from '@/lib/format'
 
 const POLL_MS = 3000
 const ACTIVE = ACTIVE_STATUSES
 
 function formatAmount(op: Operation) {
-  return `${op.usdt_amount_text ?? ''} ${op.token_symbol}`.trim()
+  return formatOperationAmount(op.usdt_amount_text, op.token_symbol)
 }
 
 function formatDate(iso: string, locale: Locale) {

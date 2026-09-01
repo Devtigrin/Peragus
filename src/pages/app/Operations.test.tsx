@@ -44,7 +44,8 @@ describe('Operations page', () => {
         <Operations locale="pt" />
       </MemoryRouter>,
     )
-    expect(await screen.findByText('25.000000 MockUSDT')).toBeInTheDocument()
+    // 25.000000 é formatado pt-BR preservando decimais: 25,000000
+    expect(await screen.findByText('25,000000 MockUSDT')).toBeInTheDocument()
     expect(screen.getByDisplayValue('PIX-CODE-123')).toBeInTheDocument()
     expect(screen.getByText('Criada')).toBeInTheDocument()
   })
